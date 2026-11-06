@@ -1,0 +1,98 @@
+{
+  "name": "CommodityBatch",
+  "type": "object",
+  "properties": {
+    "batch_code": {
+      "type": "string"
+    },
+    "commodity": {
+      "type": "string"
+    },
+    "source_name": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "farmer",
+        "cooperative",
+        "aggregator"
+      ],
+      "default": "farmer"
+    },
+    "farmer_code": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "lga": {
+      "type": "string"
+    },
+    "harvest_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "unit": {
+      "type": "string",
+      "enum": [
+        "kg",
+        "tonne",
+        "bag"
+      ],
+      "default": "kg"
+    },
+    "aggregation_location": {
+      "type": "string"
+    },
+    "storage_location": {
+      "type": "string"
+    },
+    "processing_notes": {
+      "type": "string"
+    },
+    "destination": {
+      "type": "string"
+    },
+    "quality_status": {
+      "type": "string",
+      "enum": [
+        "not_tested",
+        "pending",
+        "compliant",
+        "flagged"
+      ],
+      "default": "not_tested"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "registered",
+        "in_storage",
+        "processed",
+        "distributed"
+      ],
+      "default": "registered"
+    },
+    "trace_code": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "batch_code",
+    "commodity"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

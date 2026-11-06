@@ -1,0 +1,55 @@
+{
+  "name": "ImpactIndicator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "output",
+        "outcome"
+      ],
+      "default": "output"
+    },
+    "baseline": {
+      "type": "number"
+    },
+    "target": {
+      "type": "number"
+    },
+    "actual": {
+      "type": "number"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "period": {
+      "type": "string"
+    },
+    "organisation": {
+      "type": "string"
+    },
+    "verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

@@ -1,0 +1,98 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import { Image } from "@/components/ui/image";
+import { fmtNum } from "@/lib/format";
+
+const HERO_IMAGE =
+  "https://media.base44.com/images/public/6ae9be71bd59ad5c7fab0751/d218d273d_generated_image.png";
+
+export default function Hero({ stats, onRequestAccess }) {
+  return (
+    <section className="relative overflow-hidden border-b border-border/70">
+      <div className="mx-auto grid w-full max-w-[1240px] items-center gap-12 px-6 py-16 md:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+        <div className="animate-fade-up">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-forest/15 bg-forest-tint/60 px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-forest">
+              Agricultural intelligence · Nigeria
+            </span>
+          </div>
+
+          <h1 className="font-display text-[42px] leading-[1.02] tracking-[-0.02em] text-forest-dark sm:text-[54px] lg:text-[62px]">
+            Agricultural intelligence for <em className="text-gold-dark">food security</em> and better
+            nutrition.
+          </h1>
+
+          <p className="mt-6 max-w-xl text-[15px] leading-[1.75] text-foreground/70">
+            NouriTrack connects smallholder farmers, cooperatives, commodity supply chains, food quality
+            monitoring and community nutrition programmes in one integrated evidence system — so that
+            institutions can see what is produced, verify what is safe, and understand who is reached.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              to="/dashboard"
+              className="group inline-flex items-center gap-2 rounded-lg bg-forest px-5 py-3 text-[13px] font-semibold text-primary-foreground transition-all duration-300 hover:bg-forest-dark"
+            >
+              Enter the platform
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+            </Link>
+            <button
+              onClick={onRequestAccess}
+              className="inline-flex items-center gap-2 rounded-lg border border-forest/25 bg-white px-5 py-3 text-[13px] font-semibold text-forest transition-colors duration-300 hover:border-forest/50"
+            >
+              Request access
+            </button>
+          </div>
+
+          <p className="mt-6 flex items-start gap-2 text-[11.5px] leading-relaxed text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-moss" strokeWidth={1.8} />
+            Institutional access is reviewed before activation. Household and child-level records are never
+            published on public pages.
+          </p>
+        </div>
+
+        <div className="relative animate-fade-up">
+          <div className="absolute -left-3 -top-3 hidden h-24 w-24 rounded-tl-2xl border-l border-t border-gold/40 lg:block" />
+          <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-sand shadow-[0_24px_60px_-40px_rgba(12,53,39,0.5)]">
+            <Image
+              src={HERO_IMAGE}
+              alt="Aerial view of smallholder farmland at golden hour"
+              className="block h-[300px] w-full sm:h-[380px] lg:h-[440px]"
+              fittingType="fill"
+            />
+            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-white/40 bg-white/92 p-4 backdrop-blur-md">
+              <p className="label-caps mb-2">Verified chain of custody</p>
+              <p className="text-[12.5px] leading-relaxed text-forest-dark">
+                Farmer → batch → laboratory → community → nutrition programme → institutional report.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border/70 bg-white/60">
+        <div className="mx-auto grid w-full max-w-[1240px] grid-cols-2 gap-y-6 px-6 py-7 md:grid-cols-4 md:px-10">
+          {stats.map((stat, index) => (
+            <div
+              key={stat.label}
+              className={
+                index > 0
+                  ? "md:border-l md:border-border/70 md:pl-8"
+                  : ""
+              }
+            >
+              <p className="tabular text-[26px] font-semibold leading-none text-forest-dark">
+                {stat.value === null ? "—" : fmtNum(stat.value)}
+              </p>
+              <p className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

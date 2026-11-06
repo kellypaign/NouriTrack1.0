@@ -1,0 +1,90 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Check, X, Inbox } from "lucide-react";
+import { fmtDate } from "@/lib/format";
+
+export default function AccessRequestsPanel() {
+  const [requests, setRequests] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  const load = () =>
+    base44.entities.AccessRequest.filter({ status: "pending" }, { sort: "-created_date", limit: 20 }).then(
+      (page) => setRequests(page?.items || [])
+    );
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const decide = async (request, status) => {
+    setBusyId(request.id);
+    try {
+      await base44.entities.AccessRequest.update(request.id, {
+        status,
+        reviewed_by: "SciAg Super Administrator",
+      });
+      setRequests((current) => current.filter((item) => item.id !== request.id));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <section className="surface p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-[13.5px] font-semibold text-forest-dark">Account & organisation requests</h3>
+          <p className="mt-1 text-[11.5px] text-muted-foreground">
+            New institutional access requests awaiting administrator approval.
+          </p>
+        </div>
+        <Inbox className="h-4 w-4 text-muted-foreground" strokeWidth={1.7} />
+      </div>
+
+      {!requests ? (
+        <div className="h-16 animate-pulse rounded-lg bg-muted/60" />
+      ) : requests.length === 0 ? (
+        <p className="py-6 text-center text-[12px] text-muted-foreground">No pending requests.</p>
+      ) : (
+        <ul className="divide-y divide-border/70">
+          {requests.map((request) => (
+            <li key={request.id} className="flex flex-col gap-3 py-3 first:pt-0 sm:flex-row sm:items-center">
+              <div className="min-w-0 flex-1">
+                <p className="text-[12.5px] font-medium text-forest-dark">
+                  {request.contact_name}
+                  {request.organisation ? ` · ${request.organisation}` : ""}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                  {[request.stakeholder_type, request.email, fmtDate(request.submitted_date)]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 border-forest/25 text-[11.5px] text-forest hover:bg-forest-tint"
+                  disabled={busyId === request.id}
+                  onClick={() => decide(request, "approved")}
+                >
+                  <Check className="mr-1 h-3.5 w-3.5" /> Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-[11.5px] text-muted-foreground hover:text-destructive"
+                  disabled={busyId === request.id}
+                  onClick={() => decide(request, "rejected")}
+                >
+                  <X className="mr-1 h-3.5 w-3.5" /> Reject
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}

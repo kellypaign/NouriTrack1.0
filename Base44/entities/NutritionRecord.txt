@@ -1,0 +1,76 @@
+{
+  "name": "NutritionRecord",
+  "type": "object",
+  "properties": {
+    "community": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "report_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "dietary_diversity_score": {
+      "type": "number"
+    },
+    "food_availability": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "default": "moderate"
+    },
+    "food_affordability": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "default": "moderate"
+    },
+    "insecurity_flag": {
+      "type": "boolean",
+      "default": false
+    },
+    "households_reached": {
+      "type": "number"
+    },
+    "under5_reached": {
+      "type": "number"
+    },
+    "school_age_reached": {
+      "type": "number"
+    },
+    "intervention_type": {
+      "type": "string"
+    },
+    "programme": {
+      "type": "string"
+    },
+    "recorded_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "community",
+    "report_date"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

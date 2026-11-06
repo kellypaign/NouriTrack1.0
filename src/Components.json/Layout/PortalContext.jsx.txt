@@ -1,0 +1,22 @@
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { findPortal } from "@/lib/portals";
+
+const PortalContext = createContext({ portalId: "executive", setPortalId: () => {}, portal: findPortal("executive") });
+
+export function PortalProvider({ children }) {
+  const [portalId, setPortalId] = useState(
+    () => window.localStorage.getItem("nouritrack-portal") || "executive"
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem("nouritrack-portal", portalId);
+  }, [portalId]);
+
+  return (
+    <PortalContext.Provider value={{ portalId, setPortalId, portal: findPortal(portalId) }}>
+      {children}
+    </PortalContext.Provider>
+  );
+}
+
+export const usePortal = () => useContext(PortalContext);

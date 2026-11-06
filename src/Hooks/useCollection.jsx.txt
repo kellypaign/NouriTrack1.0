@@ -1,0 +1,28 @@
+import { useCallback, useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+
+export default function useCollection(entityName, query = {}, options = {}) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const key = JSON.stringify([query, options]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const page = await base44.entities[entityName].filter(query, {
+        sort: "-created_date",
+        limit: 200,
+        ...options,
+      });
+      setItems(page?.items || []);
+    } finally {
+      setLoading(false);
+    }
+  }, [entityName, key]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { items, loading, reload: load, setItems };
+}

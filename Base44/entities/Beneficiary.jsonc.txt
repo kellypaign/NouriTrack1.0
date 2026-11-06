@@ -1,0 +1,73 @@
+{
+  "name": "Beneficiary",
+  "type": "object",
+  "properties": {
+    "household_code": {
+      "type": "string"
+    },
+    "community": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "lga": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "household",
+        "child_under5",
+        "school_age_child",
+        "pregnant_or_lactating",
+        "other"
+      ],
+      "default": "household"
+    },
+    "programme": {
+      "type": "string"
+    },
+    "enrolled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "enrolled",
+        "active",
+        "completed",
+        "withdrawn"
+      ],
+      "default": "enrolled"
+    },
+    "members_count": {
+      "type": "number"
+    },
+    "children_under5": {
+      "type": "number"
+    },
+    "follow_up_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "household_code",
+    "community"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

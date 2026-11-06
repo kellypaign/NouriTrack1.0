@@ -1,0 +1,57 @@
+import React from "react";
+import { cn } from "@/lib/utils";
+import { prettyLabel } from "@/lib/format";
+
+const TONES = {
+  green: "border-forest/20 bg-forest-tint text-forest",
+  amber: "border-gold/30 bg-gold-light text-gold-dark",
+  red: "border-[#B4553A]/25 bg-[#F8E8E2] text-[#97402A]",
+  neutral: "border-border bg-muted/70 text-muted-foreground",
+};
+
+const MAP = {
+  verified: "green",
+  compliant: "green",
+  active: "green",
+  low: "green",
+  approved: "green",
+  resolved: "green",
+  completed: "green",
+  high: "red",
+  flagged: "red",
+  non_compliant: "red",
+  rejected: "red",
+  critical: "red",
+  withdrawn: "red",
+  pending: "amber",
+  submitted: "amber",
+  under_review: "amber",
+  monitoring: "amber",
+  moderate: "amber",
+  enrolled: "amber",
+  open: "amber",
+  medium: "amber",
+  in_storage: "amber",
+  processing: "amber",
+  distributed: "neutral",
+  processed: "neutral",
+  registered: "neutral",
+  not_tested: "neutral",
+  inactive: "neutral",
+  other: "neutral",
+};
+
+export default function StatusPill({ value, className }) {
+  const tone = TONES[MAP[value] || "neutral"];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]",
+        tone,
+        className
+      )}
+    >
+      {prettyLabel(value)}
+    </span>
+  );
+}

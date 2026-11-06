@@ -1,0 +1,67 @@
+{
+  "name": "Community",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "lga": {
+      "type": "string"
+    },
+    "households": {
+      "type": "number"
+    },
+    "population": {
+      "type": "number"
+    },
+    "children_under5": {
+      "type": "number"
+    },
+    "food_access_index": {
+      "type": "number"
+    },
+    "dietary_diversity_score": {
+      "type": "number"
+    },
+    "programme": {
+      "type": "string"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "critical"
+      ],
+      "default": "moderate"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "monitored_since": {
+      "type": "string",
+      "format": "date"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "state"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

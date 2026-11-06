@@ -1,0 +1,264 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import StatusPill from "@/components/common/StatusPill";
+import { fmtDate, fmtQty, prettyLabel, todayIso } from "@/lib/format";
+import { TRACE_EVENT_TYPES } from "@/lib/constants";
+import { Plus, QrCode } from "lucide-react";
+
+export default function BatchTraceSheet({ batch, open, onOpenChange, onChanged }) {
+  const [events, setEvents] = useState([]);
+  const [assessments, setAssessments] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [event, setEvent] = useState({
+    event_type: "stored",
+    event_date: todayIso(),
+    location: "",
+    actor: "",
+    notes: "",
+  });
+
+  const load = async () => {
+    if (!batch) return;
+    const [tracePage, qualityPage] = await Promise.all([
+      base44.entities.TraceEvent.filter({ batch_code: batch.batch_code }, { limit: 100 }),
+      base44.entities.QualityAssessment.filter({ batch_code: batch.batch_code }, { limit: 20 }),
+    ]);
+    setEvents(
+      [...(tracePage?.items || [])].sort(
+        (a, b) => new Date(a.event_date || a.created_date) - new Date(b.event_date || b.created_date)
+      )
+    );
+    setAssessments(qualityPage?.items || []);
+  };
+
+  useEffect(() => {
+    if (open && batch) {
+      setShowForm(false);
+      load();
+    }
+  }, [open, batch?.id]);
+
+  const addEvent = async (submitEvent) => {
+    submitEvent.preventDefault();
+    setSaving(true);
+    try {
+      await base44.entities.TraceEvent.create({
+        ...event,
+        batch_code: batch.batch_code,
+        demo_record: false,
+      });
+      setEvent({ event_type: "stored", event_date: todayIso(), location: "", actor: "", notes: "" });
+      setShowForm(false);
+      await load();
+      onChanged?.();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!batch) return null;
+
+  const traceCode = batch.trace_code || batch.batch_code;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(
+    `${window.location.origin}/batches?batch=${traceCode}`
+  )}`;
+
+  const facts = [
+    { label: "Commodity", value: batch.commodity },
+    { label: "Quantity", value: fmtQty(batch.quantity, batch.unit) },
+    { label: "Source", value: batch.source_name || "—" },
+    { label: "Harvest date", value: fmtDate(batch.harvest_date) },
+    { label: "Aggregation", value: batch.aggregation_location || "—" },
+    { label: "Storage", value: batch.storage_location || "—" },
+    { label: "Destination", value: batch.destination || "—" },
+    { label: "Farmer ID", value: batch.farmer_code || "—" },
+  ];
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-[560px]">
+        <SheetHeader>
+          <p className="label-caps mb-1">Batch traceability</p>
+          <SheetTitle className="font-display text-2xl text-forest-dark">{batch.batch_code}</SheetTitle>
+          <SheetDescription className="text-[12px]">
+            {[batch.state, batch.lga].filter(Boolean).join(", ") || "Location not recorded"} ·{" "}
+            {prettyLabel(batch.status)}
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <StatusPill value={batch.status} />
+          <StatusPill value={batch.quality_status} />
+          <StatusPill value={batch.source_type} />
+        </div>
+
+        <div className="mt-5 flex items-start gap-4 rounded-xl border border-border bg-sand-light p-3.5">
+          <img src={qrSrc} alt={`QR code for batch ${batch.batch_code}`} className="h-[92px] w-[92px] rounded-md bg-white" />
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-[12px] font-semibold text-forest-dark">
+              <QrCode className="h-3.5 w-3.5" /> Verification code
+            </p>
+            <p className="mt-1 break-all font-mono text-[11px] text-forest">{traceCode}</p>
+            <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
+              Scanning opens this batch record so a buyer or officer can confirm the recorded chain of custody.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3">
+          {facts.map((fact) => (
+            <div key={fact.label}>
+              <p className="label-caps">{fact.label}</p>
+              <p className="mt-1 text-[12.5px] leading-snug text-foreground/90">{fact.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {batch.processing_notes && (
+          <div className="mt-4 rounded-lg border border-border bg-white p-3">
+            <p className="label-caps mb-1.5">Processing notes</p>
+            <p className="text-[12px] leading-relaxed text-foreground/80">{batch.processing_notes}</p>
+          </div>
+        )}
+
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-[12.5px] font-semibold text-forest-dark">Quality results</h4>
+          </div>
+          {assessments.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border px-3 py-4 text-[11.5px] text-muted-foreground">
+              No laboratory assessment recorded for this batch.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {assessments.map((assessment) => (
+                <li key={assessment.id} className="rounded-lg border border-border bg-white p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-mono text-[11px] text-forest">{assessment.sample_ref}</p>
+                    <StatusPill value={assessment.classification} />
+                  </div>
+                  <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                    {[
+                      assessment.moisture_content ? `${assessment.moisture_content}% moisture` : null,
+                      assessment.aflatoxin_ppb !== undefined && assessment.aflatoxin_ppb !== null
+                        ? `${assessment.aflatoxin_ppb} ppb aflatoxin`
+                        : null,
+                      assessment.laboratory,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-[12.5px] font-semibold text-forest-dark">Chain of custody</h4>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 border-forest/25 text-[11.5px] text-forest hover:bg-forest-tint"
+              onClick={() => setShowForm((value) => !value)}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" /> Record event
+            </Button>
+          </div>
+
+          {showForm && (
+            <form onSubmit={addEvent} className="mb-4 space-y-2.5 rounded-lg border border-forest/20 bg-forest-tint/40 p-3">
+              <div className="grid grid-cols-2 gap-2.5">
+                <select
+                  value={event.event_type}
+                  onChange={(e) => setEvent({ ...event, event_type: e.target.value })}
+                  className="select-input h-8 text-[12px]"
+                >
+                  {TRACE_EVENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {prettyLabel(type)}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  type="date"
+                  className="h-8 text-[12px]"
+                  value={event.event_date}
+                  onChange={(e) => setEvent({ ...event, event_date: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <Input
+                  className="h-8 text-[12px]"
+                  placeholder="Location"
+                  value={event.location}
+                  onChange={(e) => setEvent({ ...event, location: e.target.value })}
+                />
+                <Input
+                  className="h-8 text-[12px]"
+                  placeholder="Recorded by"
+                  value={event.actor}
+                  onChange={(e) => setEvent({ ...event, actor: e.target.value })}
+                />
+              </div>
+              <Textarea
+                rows={2}
+                className="resize-none text-[12px]"
+                placeholder="Notes"
+                value={event.notes}
+                onChange={(e) => setEvent({ ...event, notes: e.target.value })}
+              />
+              <div className="flex justify-end">
+                <Button type="submit" size="sm" disabled={saving} className="h-8 bg-forest text-[11.5px] hover:bg-forest-dark">
+                  {saving ? "Saving…" : "Add to history"}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {events.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border px-3 py-4 text-[11.5px] text-muted-foreground">
+              No custody events recorded.
+            </p>
+          ) : (
+            <ol className="relative border-l border-dashed border-forest/25 pl-5">
+              {events.map((item) => (
+                <li key={item.id} className="relative pb-4 last:pb-0">
+                  <span className="absolute -left-[25px] top-1 h-2 w-2 rounded-full border border-forest/40 bg-white" />
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[12px] font-semibold text-forest-dark">{prettyLabel(item.event_type)}</p>
+                    <p className="text-[10.5px] text-muted-foreground">{fmtDate(item.event_date)}</p>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {[item.location, item.actor].filter(Boolean).join(" · ") || "No location recorded"}
+                  </p>
+                  {item.notes && <p className="mt-1 text-[11.5px] leading-relaxed text-foreground/75">{item.notes}</p>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        <div className="mt-6 border-t border-border pt-4">
+          <Label className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            Batch code
+          </Label>
+          <p className="mt-1 font-mono text-[12px] text-forest">{batch.batch_code}</p>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

@@ -1,0 +1,49 @@
+{
+  "name": "TraceEvent",
+  "type": "object",
+  "properties": {
+    "batch_code": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "registered",
+        "aggregated",
+        "stored",
+        "sampled",
+        "processed",
+        "distributed",
+        "verified"
+      ],
+      "default": "registered"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "location": {
+      "type": "string"
+    },
+    "actor": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "batch_code",
+    "event_type"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

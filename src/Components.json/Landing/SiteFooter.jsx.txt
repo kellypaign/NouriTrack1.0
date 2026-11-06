@@ -1,0 +1,54 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import { Leaf } from "lucide-react";
+
+export default function SiteFooter() {
+  return (
+    <footer id="contact" className="bg-forest-dark text-primary-foreground">
+      <div className="mx-auto w-full max-w-[1240px] px-6 py-14 md:px-10">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-white/10">
+                <Leaf className="h-[18px] w-[18px] text-gold" strokeWidth={1.8} />
+              </div>
+              <p className="font-display text-[20px] tracking-tight">NouriTrack</p>
+            </div>
+            <p className="mt-4 max-w-sm text-[13px] leading-relaxed text-primary-foreground/65">
+              Agricultural Intelligence. Food Security. Better Nutrition. Developed by SciAg Agroscientific
+              Limited, Nigeria.
+            </p>
+            <p className="mt-4 max-w-sm text-[11.5px] leading-relaxed text-primary-foreground/45">
+              An early-stage product being developed towards open-source release and pilot testing. Platform
+              records shown here are labelled demonstration data.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold">Platform</p>
+            <ul className="mt-4 space-y-2.5 text-[12.5px] text-primary-foreground/70">
+              <li><Link to="/dashboard" className="hover:text-white">Executive dashboard</Link></li>
+              <li><Link to="/batches" className="hover:text-white">Commodity traceability</Link></li>
+              <li><Link to="/quality" className="hover:text-white">Food quality</Link></li>
+              <li><Link to="/nutrition" className="hover:text-white">Community nutrition</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold">Access</p>
+            <ul className="mt-4 space-y-2.5 text-[12.5px] text-primary-foreground/70">
+              <li>Institutional access is approved by the SciAg administrator.</li>
+              <li>Government, laboratory and partner accounts require institutional verification.</li>
+              <li>Use “Request access” on the landing page to begin onboarding.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-[11px] text-primary-foreground/45 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} SciAg Agroscientific Limited. All rights reserved.</p>
+          <p>Data protection · Consent · Audit trail</p>
+        </div>
+      </div>
+    </footer>
+  );
+}

@@ -1,0 +1,160 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
+const EMPTY = {
+  name: "",
+  category: "output",
+  baseline: "",
+  target: "",
+  actual: "",
+  unit: "",
+  period: "2026 Q1",
+  organisation: "SciAg Agroscientific Limited",
+  verified: false,
+  notes: "",
+};
+
+export default function IndicatorForm({ open, onOpenChange, indicator, onSaved }) {
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(indicator ? { ...EMPTY, ...indicator } : EMPTY);
+    setError("");
+  }, [open, indicator]);
+
+  const set = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const num = (field) => (event) =>
+    setForm({ ...form, [field]: event.target.value === "" ? "" : Number(event.target.value) });
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const payload = {
+        ...form,
+        baseline: form.baseline === "" ? null : Number(form.baseline),
+        target: form.target === "" ? null : Number(form.target),
+        actual: form.actual === "" ? null : Number(form.actual),
+      };
+      delete payload.id;
+      delete payload.created_date;
+      delete payload.updated_date;
+      delete payload.created_by_id;
+      if (indicator) await base44.entities.ImpactIndicator.update(indicator.id, payload);
+      else await base44.entities.ImpactIndicator.create({ ...payload, demo_record: false });
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      setError("The indicator could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    setSaving(true);
+    await base44.entities.ImpactIndicator.delete(indicator.id);
+    setSaving(false);
+    onSaved();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-forest-dark">
+            {indicator ? "Update indicator" : "Add impact indicator"}
+          </DialogTitle>
+          <DialogDescription className="text-[12px]">
+            Outputs measure activity delivered. Outcomes measure change in conditions — record them separately.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="mt-4 space-y-4">
+          <div>
+            <Label className="field-label">Indicator name</Label>
+            <Input required className="mt-1.5" value={form.name} onChange={set("name")} placeholder="Farmers registered and verified" />
+          </div>
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div>
+              <Label className="field-label">Category</Label>
+              <select value={form.category} onChange={set("category")} className="select-input mt-1.5">
+                <option value="output">Output</option>
+                <option value="outcome">Outcome</option>
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Unit</Label>
+              <Input className="mt-1.5" value={form.unit} onChange={set("unit")} placeholder="farmers, households, %" />
+            </div>
+            <div>
+              <Label className="field-label">Baseline</Label>
+              <Input type="number" className="mt-1.5" value={form.baseline} onChange={num("baseline")} />
+            </div>
+            <div>
+              <Label className="field-label">Target</Label>
+              <Input type="number" className="mt-1.5" value={form.target} onChange={num("target")} />
+            </div>
+            <div>
+              <Label className="field-label">Actual achievement</Label>
+              <Input type="number" className="mt-1.5" value={form.actual} onChange={num("actual")} />
+            </div>
+            <div>
+              <Label className="field-label">Reporting period</Label>
+              <Input className="mt-1.5" value={form.period} onChange={set("period")} />
+            </div>
+            <div className="sm:col-span-2">
+              <Label className="field-label">Reporting organisation</Label>
+              <Input className="mt-1.5" value={form.organisation} onChange={set("organisation")} />
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2.5 rounded-lg border border-border bg-sand-light p-3 text-[12px] leading-relaxed">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-[#14503C]"
+              checked={!!form.verified}
+              onChange={(e) => setForm({ ...form, verified: e.target.checked })}
+            />
+            This result has been verified by an authorised officer against source records.
+          </label>
+
+          <div>
+            <Label className="field-label">Notes</Label>
+            <Textarea rows={2} className="mt-1.5 resize-none" value={form.notes} onChange={set("notes")} />
+          </div>
+
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+          <div className="flex items-center justify-between gap-2 pt-1">
+            {indicator ? (
+              <Button type="button" variant="ghost" className="text-destructive" onClick={remove} disabled={saving}>
+                Delete indicator
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+                {saving ? "Saving…" : indicator ? "Save changes" : "Add indicator"}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

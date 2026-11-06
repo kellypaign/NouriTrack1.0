@@ -1,0 +1,79 @@
+{
+  "name": "Organisation",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "laboratory",
+        "cooperative",
+        "aggregator",
+        "ngo",
+        "government",
+        "private_company",
+        "research"
+      ],
+      "default": "laboratory"
+    },
+    "state": {
+      "type": "string"
+    },
+    "lga": {
+      "type": "string"
+    },
+    "administrator_name": {
+      "type": "string"
+    },
+    "administrator_email": {
+      "type": "string"
+    },
+    "administrator_phone": {
+      "type": "string"
+    },
+    "role_in_platform": {
+      "type": "string"
+    },
+    "commodities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "accreditation": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "partnership_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "type"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

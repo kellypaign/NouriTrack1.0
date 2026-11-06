@@ -1,0 +1,82 @@
+{
+  "name": "QualityAssessment",
+  "type": "object",
+  "properties": {
+    "sample_ref": {
+      "type": "string"
+    },
+    "batch_code": {
+      "type": "string"
+    },
+    "commodity": {
+      "type": "string"
+    },
+    "laboratory": {
+      "type": "string"
+    },
+    "sample_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "moisture_content": {
+      "type": "number"
+    },
+    "aflatoxin_ppb": {
+      "type": "number"
+    },
+    "fumonisin_ppb": {
+      "type": "number"
+    },
+    "other_mycotoxin": {
+      "type": "string"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "compliant",
+        "non_compliant",
+        "flagged"
+      ],
+      "default": "pending"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "under_review",
+        "verified"
+      ],
+      "default": "submitted"
+    },
+    "non_conformity": {
+      "type": "string"
+    },
+    "corrective_action": {
+      "type": "string"
+    },
+    "tested_by": {
+      "type": "string"
+    },
+    "verified_by": {
+      "type": "string"
+    },
+    "certificate_url": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "sample_ref",
+    "batch_code"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

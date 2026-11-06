@@ -1,0 +1,70 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import ChartCard from "@/components/dashboard/ChartCard";
+import { fetchAll, qualityBreakdown } from "@/lib/analytics";
+import { fmtNum } from "@/lib/format";
+
+const ROWS = [
+  { key: "compliant", label: "Compliant", bar: "bg-forest", text: "text-forest" },
+  { key: "pending", label: "Pending review", bar: "bg-gold", text: "text-gold-dark" },
+  { key: "flagged", label: "Flagged for assessment", bar: "bg-[#B4553A]", text: "text-[#97402A]" },
+  { key: "non_compliant", label: "Non-conforming", bar: "bg-[#8C3B24]", text: "text-[#8C3B24]" },
+];
+
+export default function QualitySummary() {
+  const [counts, setCounts] = useState(null);
+
+  useEffect(() => {
+    fetchAll("QualityAssessment").then((records) => setCounts(qualityBreakdown(records)));
+  }, []);
+
+  const total = counts ? Object.values(counts).reduce((sum, value) => sum + value, 0) : 0;
+
+  return (
+    <ChartCard
+      title="Food quality assessment summary"
+      subtitle="Laboratory classifications recorded"
+      action={
+        <Link to="/quality" className="text-[11px] font-semibold text-forest underline-offset-4 hover:underline">
+          View records
+        </Link>
+      }
+    >
+      {!counts ? (
+        <div className="h-[196px] animate-pulse rounded-lg bg-muted/60" />
+      ) : total === 0 ? (
+        <div className="flex h-[196px] items-center justify-center text-[12.5px] text-muted-foreground">
+          No assessments recorded yet.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-end gap-2">
+            <p className="tabular text-[30px] font-semibold leading-none text-forest-dark">{fmtNum(total)}</p>
+            <p className="pb-1 text-[11.5px] text-muted-foreground">assessments on record</p>
+          </div>
+          {ROWS.map((row) => {
+            const value = counts[row.key] || 0;
+            const share = total ? Math.round((value / total) * 100) : 0;
+            return (
+              <div key={row.key}>
+                <div className="mb-1.5 flex items-center justify-between text-[11.5px]">
+                  <span className="text-foreground/75">{row.label}</span>
+                  <span className={`tabular font-semibold ${row.text}`}>
+                    {value} · {share}%
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className={`h-full rounded-full ${row.bar}`} style={{ width: `${share}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          <p className="pt-1 text-[10.5px] leading-relaxed text-muted-foreground">
+            Classification reflects recorded laboratory results only. Verification by a quality assurance
+            officer is recorded separately.
+          </p>
+        </div>
+      )}
+    </ChartCard>
+  );
+}

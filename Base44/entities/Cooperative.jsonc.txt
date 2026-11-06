@@ -1,0 +1,78 @@
+{
+  "name": "Cooperative",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "record_type": {
+      "type": "string",
+      "enum": [
+        "cooperative",
+        "cluster"
+      ],
+      "default": "cooperative"
+    },
+    "state": {
+      "type": "string"
+    },
+    "lga": {
+      "type": "string"
+    },
+    "community": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "member_count": {
+      "type": "number"
+    },
+    "production_capacity_t": {
+      "type": "number"
+    },
+    "primary_commodities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "coordinator_name": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "aggregation_point": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "state"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

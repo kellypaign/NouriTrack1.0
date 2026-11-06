@@ -1,0 +1,101 @@
+{
+  "name": "Household",
+  "type": "object",
+  "properties": {
+    "household_code": {
+      "type": "string"
+    },
+    "community": {
+      "type": "string"
+    },
+    "ward": {
+      "type": "string"
+    },
+    "lga": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "household_size": {
+      "type": "number"
+    },
+    "children_under5": {
+      "type": "number"
+    },
+    "children_6_23_months": {
+      "type": "number"
+    },
+    "school_age_children": {
+      "type": "number"
+    },
+    "caregiver_name": {
+      "type": "string"
+    },
+    "caregiver_phone": {
+      "type": "string"
+    },
+    "contact_consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "gps_consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "child_data_consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "registered_by": {
+      "type": "string",
+      "enum": [
+        "self",
+        "field_officer"
+      ],
+      "default": "self"
+    },
+    "registering_officer": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "withdrawn"
+      ],
+      "default": "active"
+    },
+    "assistance_requested": {
+      "type": "boolean",
+      "default": false
+    },
+    "assistance_note": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "household_code",
+    "community",
+    "state"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

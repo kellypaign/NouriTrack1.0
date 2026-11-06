@@ -1,0 +1,240 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { COMMODITIES } from "@/lib/constants";
+import { todayIso, prettyLabel } from "@/lib/format";
+import { Paperclip } from "lucide-react";
+
+const EMPTY = {
+  sample_ref: "",
+  batch_code: "",
+  commodity: "Maize",
+  laboratory: "",
+  sample_date: todayIso(),
+  moisture_content: "",
+  aflatoxin_ppb: "",
+  fumonisin_ppb: "",
+  other_mycotoxin: "",
+  classification: "pending",
+  non_conformity: "",
+  corrective_action: "",
+  tested_by: "",
+  certificate_url: "",
+};
+
+export default function QualityForm({ open, onOpenChange, assessment, onSaved }) {
+  const [form, setForm] = useState(EMPTY);
+  const [batches, setBatches] = useState([]);
+  const [file, setFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(assessment ? { ...EMPTY, ...assessment } : EMPTY);
+    setFile(null);
+    setError("");
+    base44.entities.CommodityBatch.filter({}, { limit: 100 }).then((page) => setBatches(page?.items || []));
+  }, [open, assessment]);
+
+  const set = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const num = (field) => (event) =>
+    setForm({ ...form, [field]: event.target.value === "" ? "" : Number(event.target.value) });
+
+  const chooseBatch = (code) => {
+    const match = batches.find((batch) => batch.batch_code === code);
+    setForm({ ...form, batch_code: code, commodity: match?.commodity || form.commodity });
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      let certificateUrl = form.certificate_url;
+      if (file) {
+        const uploaded = await base44.integrations.Core.UploadPrivateFile({ file });
+        certificateUrl = uploaded.file_uri;
+      }
+
+      const payload = {
+        ...form,
+        certificate_url: certificateUrl,
+        moisture_content: form.moisture_content === "" ? null : Number(form.moisture_content),
+        aflatoxin_ppb: form.aflatoxin_ppb === "" ? null : Number(form.aflatoxin_ppb),
+        fumonisin_ppb: form.fumonisin_ppb === "" ? null : Number(form.fumonisin_ppb),
+      };
+      delete payload.id;
+      delete payload.created_date;
+      delete payload.updated_date;
+      delete payload.created_by_id;
+
+      if (assessment) {
+        await base44.entities.QualityAssessment.update(assessment.id, payload);
+      } else {
+        await base44.entities.QualityAssessment.create({
+          ...payload,
+          sample_ref: payload.sample_ref || `NT-LAB-${Date.now().toString().slice(-6)}`,
+          verification_status: "submitted",
+          demo_record: false,
+        });
+        if (payload.batch_code) {
+          await base44.entities.TraceEvent.create({
+            batch_code: payload.batch_code,
+            event_type: "sampled",
+            event_date: payload.sample_date,
+            location: payload.laboratory || "Laboratory",
+            actor: payload.tested_by || "Laboratory officer",
+            notes: `Sample ${payload.sample_ref || "reference"} submitted for analysis.`,
+            demo_record: false,
+          });
+        }
+      }
+
+      if (payload.batch_code) {
+        const linked = batches.filter((batch) => batch.batch_code === payload.batch_code);
+        const qualityStatus =
+          payload.classification === "compliant"
+            ? "compliant"
+            : payload.classification === "pending"
+            ? "pending"
+            : "flagged";
+        await Promise.all(
+          linked.map((batch) => base44.entities.CommodityBatch.update(batch.id, { quality_status: qualityStatus }))
+        );
+      }
+
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      setError("The assessment could not be saved. Please check the required fields.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-forest-dark">
+            {assessment ? "Update assessment" : "Record laboratory assessment"}
+          </DialogTitle>
+          <DialogDescription className="text-[12px]">
+            Results are submitted for verification. Classification reflects the recorded laboratory result only.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="mt-4 space-y-4">
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div>
+              <Label className="field-label">Sample reference</Label>
+              <Input className="mt-1.5" value={form.sample_ref} onChange={set("sample_ref")} placeholder="NT-LAB-000123" />
+            </div>
+            <div>
+              <Label className="field-label">Linked batch</Label>
+              <select value={form.batch_code} onChange={(e) => chooseBatch(e.target.value)} className="select-input mt-1.5">
+                <option value="">Not linked</option>
+                {batches.map((batch) => (
+                  <option key={batch.id} value={batch.batch_code}>
+                    {batch.batch_code} · {batch.commodity}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Commodity</Label>
+              <select value={form.commodity} onChange={set("commodity")} className="select-input mt-1.5">
+                {COMMODITIES.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Laboratory</Label>
+              <Input className="mt-1.5" value={form.laboratory} onChange={set("laboratory")} />
+            </div>
+            <div>
+              <Label className="field-label">Sample date</Label>
+              <Input type="date" className="mt-1.5" value={form.sample_date} onChange={set("sample_date")} />
+            </div>
+            <div>
+              <Label className="field-label">Tested by</Label>
+              <Input className="mt-1.5" value={form.tested_by} onChange={set("tested_by")} />
+            </div>
+            <div>
+              <Label className="field-label">Moisture content (%)</Label>
+              <Input type="number" step="0.1" className="mt-1.5" value={form.moisture_content} onChange={num("moisture_content")} />
+            </div>
+            <div>
+              <Label className="field-label">Aflatoxin (ppb)</Label>
+              <Input type="number" step="0.1" className="mt-1.5" value={form.aflatoxin_ppb} onChange={num("aflatoxin_ppb")} />
+            </div>
+            <div>
+              <Label className="field-label">Fumonisin (ppb)</Label>
+              <Input type="number" step="0.1" className="mt-1.5" value={form.fumonisin_ppb} onChange={num("fumonisin_ppb")} />
+            </div>
+            <div>
+              <Label className="field-label">Other mycotoxin</Label>
+              <Input className="mt-1.5" value={form.other_mycotoxin} onChange={set("other_mycotoxin")} />
+            </div>
+            <div>
+              <Label className="field-label">Classification</Label>
+              <select value={form.classification} onChange={set("classification")} className="select-input mt-1.5">
+                <option value="pending">Pending</option>
+                <option value="compliant">Compliant</option>
+                <option value="non_compliant">Non-conforming</option>
+                <option value="flagged">Flagged for assessment</option>
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Certificate / report</Label>
+              <label className="mt-1.5 flex h-9 cursor-pointer items-center gap-2 rounded-md border border-input bg-white px-3 text-[12px] text-muted-foreground hover:border-forest/40">
+                <Paperclip className="h-3.5 w-3.5" />
+                <span className="truncate">
+                  {file ? file.name : form.certificate_url ? "Certificate attached" : "Attach PDF or image"}
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(event) => setFile(event.target.files?.[0] || null)}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div>
+              <Label className="field-label">Non-conformity</Label>
+              <Textarea rows={2} className="mt-1.5 resize-none" value={form.non_conformity} onChange={set("non_conformity")} />
+            </div>
+            <div>
+              <Label className="field-label">Corrective action</Label>
+              <Textarea rows={2} className="mt-1.5 resize-none" value={form.corrective_action} onChange={set("corrective_action")} />
+            </div>
+          </div>
+
+          <p className="rounded-lg bg-sand-light px-3 py-2 text-[10.5px] leading-relaxed text-muted-foreground">
+            Certificates are uploaded securely and stored privately; only authorised officers can retrieve them.
+            {assessment && ` Current verification: ${prettyLabel(assessment.verification_status)}.`}
+          </p>
+
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+              {saving ? "Saving…" : assessment ? "Save assessment" : "Submit for verification"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

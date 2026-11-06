@@ -1,0 +1,55 @@
+import React from "react";
+import { Apple, Baby, Hand, Wheat, Droplets } from "lucide-react";
+
+const TIPS = [
+  {
+    icon: Apple,
+    title: "Eat a variety every day",
+    body: "Try to eat foods from at least 5 of the 12 food groups each day — grains, vegetables, fruits, legumes, eggs or fish, and milk.",
+  },
+  {
+    icon: Baby,
+    title: "Feeding young children",
+    body: "Breastfeed exclusively for the first 6 months. From 6 months, add soft, varied foods 2–3 times a day while continuing to breastfeed to 2 years.",
+  },
+  {
+    icon: Hand,
+    title: "Keep food and hands clean",
+    body: "Wash hands with clean water and soap before cooking and eating. Wash fruit and vegetables thoroughly.",
+  },
+  {
+    icon: Wheat,
+    title: "Store grain safely",
+    body: "Keep maize and grains dry and well-aired to prevent mould and aflatoxin. Dry grain thoroughly before storage.",
+  },
+  {
+    icon: Droplets,
+    title: "Drink safe water",
+    body: "Use clean, treated water for drinking and cooking. Store water in clean, covered containers.",
+  },
+];
+
+export default function HouseholdEducation() {
+  return (
+    <section>
+      <p className="label-caps mb-2">Nutrition education</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {TIPS.map((tip) => {
+          const Icon = tip.icon;
+          return (
+            <div key={tip.title} className="surface p-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-forest-tint">
+                <Icon className="h-5 w-5 text-forest" strokeWidth={1.8} />
+              </div>
+              <p className="mt-3 text-[13px] font-semibold text-forest-dark">{tip.title}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{tip.body}</p>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[11.5px] text-muted-foreground">
+        Ask your community nutrition officer to explain any of this in your local language.
+      </p>
+    </section>
+  );
+}

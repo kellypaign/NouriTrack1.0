@@ -1,0 +1,296 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { todayIso } from "@/lib/format";
+
+const FOOD_GROUPS = [
+  "Cereals / grains",
+  "Roots & tubers (yam, cassava, plantain)",
+  "Vegetables",
+  "Fruits",
+  "Meat / poultry",
+  "Eggs",
+  "Fish / seafood",
+  "Legumes, nuts & seeds",
+  "Milk & dairy",
+  "Oils & fats",
+  "Sweets / sugar",
+  "Spices, condiments & drinks",
+];
+
+const EMPTY = {
+  assessment_date: todayIso(),
+  foods_consumed: [],
+  child_feeding_assessed: false,
+  child_feeding_notes: "",
+  maternal_assessed: false,
+  maternal_notes: "",
+  worry: "no",
+  fewerMeals: "no",
+  hungry: "no",
+  food_shortage_reported: false,
+  shortage_details: "",
+  difficulty_accessing_food: false,
+  assessed_by: "self",
+  assessor_name: "",
+  notes: "",
+};
+
+const INSECURITY_LEVELS = ["food_secure", "mildly_food_insecure", "moderately_food_insecure", "severely_food_insecure"];
+
+export default function HouseholdAssessmentForm({ open, onOpenChange, household, onSaved }) {
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm({ ...EMPTY, assessment_date: todayIso() });
+    setError("");
+  }, [open]);
+
+  const toggleFood = (item) =>
+    setForm({
+      ...form,
+      foods_consumed: form.foods_consumed.includes(item)
+        ? form.foods_consumed.filter((v) => v !== item)
+        : [...form.foods_consumed, item],
+    });
+
+  const yesNo = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const yesCount = [form.worry, form.fewerMeals, form.hungry].filter((v) => v === "yes").length;
+      const payload = {
+        household_code: household.household_code,
+        assessment_date: form.assessment_date,
+        foods_consumed: form.foods_consumed,
+        dietary_diversity_score: form.foods_consumed.length,
+        child_feeding_assessed: form.child_feeding_assessed,
+        child_feeding_notes: form.child_feeding_notes,
+        maternal_assessed: form.maternal_assessed,
+        maternal_notes: form.maternal_notes,
+        food_insecurity_level: INSECURITY_LEVELS[yesCount],
+        food_shortage_reported: form.food_shortage_reported,
+        shortage_details: form.shortage_details,
+        difficulty_accessing_food: form.difficulty_accessing_food,
+        assessed_by: form.assessed_by,
+        assessor_name: form.assessor_name,
+        notes: form.notes,
+      };
+      await base44.entities.HouseholdAssessment.create({ ...payload, demo_record: false });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (err) {
+      setError("The assessment could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const showChildFeeding = Number(household?.children_6_23_months) > 0;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-forest-dark">Household nutrition assessment</DialogTitle>
+          <DialogDescription className="text-[12px]">
+            Think about what your family ate in the last 24 hours. Answer as honestly as you can — this helps plan support.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="mt-4 space-y-5">
+          <div>
+            <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Assessment date
+            </Label>
+            <Input type="date" className="mt-1.5 max-w-[220px]" value={form.assessment_date} onChange={(e) => setForm({ ...form, assessment_date: e.target.value })} />
+          </div>
+
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Foods eaten in the last 24 hours
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Tick every food group your family ate yesterday.</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {FOOD_GROUPS.map((item) => {
+                const active = form.foods_consumed.includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleFood(item)}
+                    className={`rounded-full border px-3 py-1.5 text-[11.5px] transition-colors ${
+                      active
+                        ? "border-forest bg-forest text-primary-foreground"
+                        : "border-border bg-white text-foreground/70 hover:border-forest/40"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11.5px] font-medium text-forest">
+              Dietary diversity score: {form.foods_consumed.length} / 12 food groups
+            </p>
+          </div>
+
+          {showChildFeeding && (
+            <div className="rounded-lg border border-border p-3.5">
+              <label className="flex items-start gap-2.5 text-[12px] text-foreground/80">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-border text-forest"
+                  checked={form.child_feeding_assessed}
+                  onChange={(e) => setForm({ ...form, child_feeding_assessed: e.target.checked })}
+                />
+                Assess feeding for children 6–23 months
+              </label>
+              {form.child_feeding_assessed && (
+                <Textarea
+                  rows={2}
+                  className="mt-2 resize-none"
+                  placeholder="e.g. Still breastfeeding; eats soft maize porridge twice daily"
+                  value={form.child_feeding_notes}
+                  onChange={(e) => setForm({ ...form, child_feeding_notes: e.target.value })}
+                />
+              )}
+            </div>
+          )}
+
+          <div className="rounded-lg border border-border p-3.5">
+            <label className="flex items-start gap-2.5 text-[12px] text-foreground/80">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border text-forest"
+                checked={form.maternal_assessed}
+                onChange={(e) => setForm({ ...form, maternal_assessed: e.target.checked })}
+              />
+              Assess maternal diet (pregnant or lactating member)
+            </label>
+            {form.maternal_assessed && (
+              <Textarea
+                rows={2}
+                className="mt-2 resize-none"
+                placeholder="Notes on the mother's diet"
+                value={form.maternal_notes}
+                onChange={(e) => setForm({ ...form, maternal_notes: e.target.value })}
+              />
+            )}
+          </div>
+
+          <div className="rounded-lg border border-border p-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Food access in the past 4 weeks
+            </p>
+            <div className="mt-2 space-y-2">
+              {[
+                { field: "worry", label: "Did you worry your household would not have enough food?" },
+                { field: "fewerMeals", label: "Did anyone eat fewer meals or smaller portions?" },
+                { field: "hungry", label: "Did anyone go to sleep hungry or skip a whole day of eating?" },
+              ].map((q) => (
+                <div key={q.field} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[12px] text-foreground/80">{q.label}</span>
+                  <div className="inline-flex rounded-md border border-border bg-white p-0.5">
+                    {["no", "yes"].map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={yesNo(q.field)}
+                        value={opt}
+                        className={`rounded px-3 py-1 text-[11px] font-medium ${
+                          form[q.field] === opt ? "bg-forest text-primary-foreground" : "text-foreground/60"
+                        }`}
+                      >
+                        {opt === "yes" ? "Yes" : "No"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border p-3.5 space-y-2.5">
+            <label className="flex items-start gap-2.5 text-[12px] text-foreground/80">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border text-forest"
+                checked={form.food_shortage_reported}
+                onChange={(e) => setForm({ ...form, food_shortage_reported: e.target.checked })}
+              />
+              We have experienced a food shortage
+            </label>
+            {form.food_shortage_reported && (
+              <Textarea
+                rows={2}
+                className="resize-none"
+                placeholder="What shortage did you face and when?"
+                value={form.shortage_details}
+                onChange={(e) => setForm({ ...form, shortage_details: e.target.value })}
+              />
+            )}
+            <label className="flex items-start gap-2.5 text-[12px] text-foreground/80">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border text-forest"
+                checked={form.difficulty_accessing_food}
+                onChange={(e) => setForm({ ...form, difficulty_accessing_food: e.target.checked })}
+              />
+              It is difficult to access nutritious food where we live
+            </label>
+          </div>
+
+          <div>
+            <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Submitted by
+            </Label>
+            <div className="mt-2 flex gap-2">
+              {[
+                { value: "self", label: "Household member" },
+                { value: "field_officer", label: "Field officer" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, assessed_by: option.value })}
+                  className={`rounded-lg border px-3.5 py-2 text-[12px] font-medium transition-colors ${
+                    form.assessed_by === option.value
+                      ? "border-forest bg-forest-tint text-forest-dark"
+                      : "border-border bg-white text-foreground/70"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {form.assessed_by === "field_officer" && (
+              <Input className="mt-2" placeholder="Officer name" value={form.assessor_name} onChange={(e) => setForm({ ...form, assessor_name: e.target.value })} />
+            )}
+          </div>
+
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+              {saving ? "Saving…" : "Save assessment"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,216 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Sparkles, AlertTriangle, Loader2 } from "lucide-react";
+import { fetchAll, qualityBreakdown, sumOf } from "@/lib/analytics";
+import { ALERT_CATEGORIES } from "@/lib/constants";
+import { todayIso } from "@/lib/format";
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    summary: { type: "string" },
+    signals: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          observation: { type: "string" },
+          evidence: { type: "string" },
+          confidence: { type: "string", enum: ["low", "medium", "high"] },
+          verification_steps: { type: "string" },
+        },
+        required: ["title", "observation", "evidence", "confidence", "verification_steps"],
+      },
+    },
+    limitations: { type: "string" },
+  },
+  required: ["summary", "signals", "limitations"],
+};
+
+export default function AiRiskScan({ onRecorded }) {
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [categories, setCategories] = useState({});
+
+  const run = async () => {
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      const [batches, assessments, nutrition, communities] = await Promise.all([
+        fetchAll("CommodityBatch", {}, 200),
+        fetchAll("QualityAssessment", {}, 200),
+        fetchAll("NutritionRecord", {}, 200),
+        fetchAll("Community", {}, 200),
+      ]);
+
+      const quality = qualityBreakdown(assessments);
+      const byCommodity = {};
+      batches.forEach((batch) => {
+        byCommodity[batch.commodity] = (byCommodity[batch.commodity] || 0) + (Number(batch.quantity) || 0);
+      });
+
+      const context = {
+        as_at: todayIso(),
+        batches: {
+          total: batches.length,
+          volume_kg_by_commodity: byCommodity,
+          by_status: batches.reduce((acc, b) => ({ ...acc, [b.status]: (acc[b.status] || 0) + 1 }), {}),
+        },
+        quality: {
+          total: assessments.length,
+          classifications: quality,
+          average_aflatoxin_ppb: assessments.length
+            ? Number(
+                (
+                  assessments.reduce((sum, a) => sum + (Number(a.aflatoxin_ppb) || 0), 0) /
+                  assessments.filter((a) => a.aflatoxin_ppb !== null && a.aflatoxin_ppb !== undefined).length || 1
+                ).toFixed(2)
+              )
+            : null,
+        },
+        nutrition: {
+          records: nutrition.length,
+          households_reached: sumOf(nutrition, "households_reached"),
+          under5_reached: sumOf(nutrition, "under5_reached"),
+          insecurity_flags: nutrition.filter((record) => record.insecurity_flag).length,
+          low_availability_records: nutrition.filter((record) => record.food_availability === "low").length,
+        },
+        communities: {
+          total: communities.length,
+          by_risk_level: communities.reduce((acc, c) => ({ ...acc, [c.risk_level]: (acc[c.risk_level] || 0) + 1 }), {}),
+        },
+      };
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are the risk-analysis assistant for NouriTrack, a Nigerian agricultural and nutrition intelligence platform.
+Analyse ONLY the dataset below. Do not invent figures, places, names or causes. Do not state predictions as confirmed facts.
+Identify up to four signals worth investigation: unusual commodity availability, food supply disruption, deteriorating community food access, production anomalies, or food quality patterns.
+For each signal cite the specific fields and counts from the dataset as evidence, state confidence as low, medium or high, and give concrete verification steps an officer could carry out.
+Close with a limitations statement naming what this dataset cannot tell you.
+If the dataset is too thin to support a signal, say so and return an empty signals list.
+
+DATASET (JSON):
+${JSON.stringify(context, null, 2)}`,
+        response_json_schema: SCHEMA,
+      });
+
+      setResult(response);
+    } catch (err) {
+      setError("The analysis could not be completed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const record = async (signal) => {
+    await base44.entities.RiskAlert.create({
+      title: signal.title,
+      category: categories[signal.title] || "supply",
+      severity: "moderate",
+      status: "open",
+      detected_date: todayIso(),
+      summary: signal.observation,
+      evidence: signal.evidence,
+      confidence: signal.confidence,
+      verification_steps: signal.verification_steps,
+      source: "AI-assisted analysis of platform records (unverified)",
+      ai_assisted: true,
+      demo_record: false,
+    });
+    onRecorded?.();
+  };
+
+  return (
+    <section className="surface mb-5 p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="max-w-2xl">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-gold-dark" strokeWidth={1.8} />
+            <h3 className="text-[13.5px] font-semibold text-forest-dark">AI-assisted risk analysis</h3>
+          </div>
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            Examines recorded batches, laboratory results and community nutrition indicators to surface patterns
+            worth investigating. Every signal is unverified until an officer confirms it, and no missing value is
+            ever estimated.
+          </p>
+        </div>
+        <Button
+          onClick={run}
+          disabled={loading}
+          className="shrink-0 bg-forest text-[12px] hover:bg-forest-dark"
+        >
+          {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
+          {loading ? "Analysing records…" : "Run analysis"}
+        </Button>
+      </div>
+
+      {error && <p className="mt-4 text-[12px] text-destructive">{error}</p>}
+
+      {result && (
+        <div className="mt-5 space-y-4 border-t border-border/70 pt-5">
+          <div className="flex items-start gap-2.5 rounded-lg border border-gold/30 bg-gold-light/60 p-3">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-dark" />
+            <p className="text-[11px] leading-relaxed text-gold-dark">
+              AI-assisted output — not a confirmed finding. Review the evidence before acting, and record only
+              verified results.
+            </p>
+          </div>
+
+          <p className="text-[12.5px] leading-relaxed text-foreground/85">{result.summary}</p>
+
+          <div className="space-y-3">
+            {(result.signals || []).map((signal) => (
+              <div key={signal.title} className="rounded-lg border border-border bg-sand-light/60 p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[12.5px] font-semibold text-forest-dark">{signal.title}</p>
+                  <span className="rounded-full border border-border bg-white px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    {signal.confidence} confidence
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-foreground/80">{signal.observation}</p>
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-forest">Evidence:</span> {signal.evidence}
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  <span className="font-semibold text-forest">Verify by:</span> {signal.verification_steps}
+                </p>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <select
+                    value={categories[signal.title] || "supply"}
+                    onChange={(event) => setCategories({ ...categories, [signal.title]: event.target.value })}
+                    className="select-input h-7 max-w-[130px] text-[11px]"
+                  >
+                    {ALERT_CATEGORIES.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 border-forest/25 text-[10.5px] text-forest hover:bg-forest-tint"
+                    onClick={() => record(signal)}
+                  >
+                    Record as alert
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {(result.signals || []).length === 0 && (
+              <p className="text-[11.5px] text-muted-foreground">
+                No signal is currently supported by the recorded data.
+              </p>
+            )}
+          </div>
+
+          <p className="rounded-lg bg-muted/50 px-3 py-2 text-[10.5px] leading-relaxed text-muted-foreground">
+            <span className="font-semibold">Limitations:</span> {result.limitations}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}

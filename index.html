@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      (function () {
+        var m = window.matchMedia('(prefers-color-scheme: dark)');
+        var apply = function () { document.documentElement.classList.toggle('dark', m.matches); };
+        apply();
+        if (m.addEventListener) { m.addEventListener('change', apply); } else { m.addListener(apply); }
+      })();
+    </script>
+    <link rel="manifest" href="/manifest.json" />
+    <title>NouriTrack — Agricultural Intelligence. Food Security. Better Nutrition.</title>
+    <meta name="description" content="NouriTrack is an agricultural intelligence, food security and community nutrition platform developed by SciAg Agroscientific Limited, Nigeria." />
+    <meta property="og:title" content="NouriTrack" />
+    <meta property="og:description" content="Agricultural Intelligence. Food Security. Better Nutrition." />
+    <meta property="og:type" content="website" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

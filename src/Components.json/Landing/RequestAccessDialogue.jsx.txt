@@ -1,0 +1,150 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CheckCircle2 } from "lucide-react";
+import { todayIso } from "@/lib/format";
+
+const TYPES = [
+  "Farmer",
+  "Agricultural cooperative",
+  "Commodity aggregator",
+  "Food processor",
+  "Laboratory",
+  "Quality assurance officer",
+  "Nutrition officer",
+  "NGO / community organisation",
+  "Government institution",
+  "Development partner",
+  "Field enumerator",
+];
+
+const EMPTY = {
+  contact_name: "",
+  email: "",
+  organisation: "",
+  stakeholder_type: TYPES[0],
+  country: "Nigeria",
+  message: "",
+};
+
+export default function RequestAccessDialog({ open, onOpenChange }) {
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  const update = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await base44.entities.AccessRequest.create({ ...form, status: "pending", submitted_date: todayIso() });
+      setSent(true);
+      setForm(EMPTY);
+    } catch (err) {
+      setError("We could not record your request. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        {sent ? (
+          <div className="py-6 text-center">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-moss" strokeWidth={1.6} />
+            <DialogTitle className="mt-4 font-display text-2xl text-forest-dark">Request received</DialogTitle>
+            <DialogDescription className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed">
+              Your request is now with the SciAg administrator for review. Accounts are activated only after
+              institutional details are verified.
+            </DialogDescription>
+            <Button className="mt-6 bg-forest hover:bg-forest-dark" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl text-forest-dark">Request platform access</DialogTitle>
+              <DialogDescription className="text-[12.5px] leading-relaxed">
+                Institutional access is reviewed before activation. Tell us who you represent and how you
+                would use NouriTrack.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={submit} className="mt-4 space-y-3.5">
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    Full name
+                  </Label>
+                  <Input required value={form.contact_name} onChange={update("contact_name")} className="mt-1.5" />
+                </div>
+                <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    Email
+                  </Label>
+                  <Input required type="email" value={form.email} onChange={update("email")} className="mt-1.5" />
+                </div>
+              </div>
+
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    Organisation
+                  </Label>
+                  <Input value={form.organisation} onChange={update("organisation")} className="mt-1.5" />
+                </div>
+                <div>
+                  <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    Stakeholder type
+                  </Label>
+                  <select
+                    value={form.stakeholder_type}
+                    onChange={update("stakeholder_type")}
+                    className="mt-1.5 h-9 w-full rounded-md border border-input bg-white px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    {TYPES.map((type) => (
+                      <option key={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  How would you use NouriTrack?
+                </Label>
+                <Textarea
+                  rows={3}
+                  value={form.message}
+                  onChange={update("message")}
+                  className="mt-1.5 resize-none"
+                  placeholder="Programme coverage, laboratory submissions, cooperative aggregation…"
+                />
+              </div>
+
+              {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+                  {saving ? "Submitting…" : "Submit request"}
+                </Button>
+              </div>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

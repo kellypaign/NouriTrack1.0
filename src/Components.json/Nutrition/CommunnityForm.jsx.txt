@@ -1,0 +1,164 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { NIGERIAN_STATES } from "@/lib/constants";
+import { todayIso } from "@/lib/format";
+
+const EMPTY = {
+  name: "",
+  state: "",
+  lga: "",
+  households: "",
+  population: "",
+  children_under5: "",
+  food_access_index: "",
+  dietary_diversity_score: "",
+  programme: "",
+  risk_level: "moderate",
+  latitude: "",
+  longitude: "",
+  monitored_since: todayIso(),
+};
+
+export default function CommunityForm({ open, onOpenChange, community, onSaved }) {
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(community ? { ...EMPTY, ...community } : EMPTY);
+    setError("");
+  }, [open, community]);
+
+  const set = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const num = (field) => (event) =>
+    setForm({ ...form, [field]: event.target.value === "" ? "" : Number(event.target.value) });
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const payload = { ...form };
+      ["households", "population", "children_under5", "food_access_index", "dietary_diversity_score", "latitude", "longitude"].forEach(
+        (field) => {
+          payload[field] = form[field] === "" ? null : Number(form[field]);
+        }
+      );
+      delete payload.id;
+      delete payload.created_date;
+      delete payload.updated_date;
+      delete payload.created_by_id;
+      if (community) await base44.entities.Community.update(community.id, payload);
+      else await base44.entities.Community.create({ ...payload, demo_record: false });
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      setError("The community record could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-forest-dark">
+            {community ? "Update community" : "Add monitored community"}
+          </DialogTitle>
+          <DialogDescription className="text-[12px]">
+            Community profiles hold aggregated household figures only — no individual or child identifiers.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="mt-4 space-y-4">
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label className="field-label">Community name</Label>
+              <Input required className="mt-1.5" value={form.name} onChange={set("name")} />
+            </div>
+            <div>
+              <Label className="field-label">State</Label>
+              <select required value={form.state} onChange={set("state")} className="select-input mt-1.5">
+                <option value="">Select state</option>
+                {NIGERIAN_STATES.map((state) => (
+                  <option key={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">LGA</Label>
+              <Input className="mt-1.5" value={form.lga} onChange={set("lga")} />
+            </div>
+            <div>
+              <Label className="field-label">Households</Label>
+              <Input type="number" className="mt-1.5" value={form.households} onChange={num("households")} />
+            </div>
+            <div>
+              <Label className="field-label">Population</Label>
+              <Input type="number" className="mt-1.5" value={form.population} onChange={num("population")} />
+            </div>
+            <div>
+              <Label className="field-label">Children under 5</Label>
+              <Input type="number" className="mt-1.5" value={form.children_under5} onChange={num("children_under5")} />
+            </div>
+            <div>
+              <Label className="field-label">Food access index (0–100)</Label>
+              <Input type="number" className="mt-1.5" value={form.food_access_index} onChange={num("food_access_index")} />
+            </div>
+            <div>
+              <Label className="field-label">Dietary diversity (0–12)</Label>
+              <Input
+                type="number"
+                className="mt-1.5"
+                value={form.dietary_diversity_score}
+                onChange={num("dietary_diversity_score")}
+              />
+            </div>
+            <div>
+              <Label className="field-label">Risk level</Label>
+              <select value={form.risk_level} onChange={set("risk_level")} className="select-input mt-1.5">
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <Label className="field-label">Linked programme</Label>
+              <Input className="mt-1.5" value={form.programme} onChange={set("programme")} />
+            </div>
+            <div>
+              <Label className="field-label">Latitude</Label>
+              <Input type="number" step="0.0001" className="mt-1.5" value={form.latitude} onChange={num("latitude")} />
+            </div>
+            <div>
+              <Label className="field-label">Longitude</Label>
+              <Input type="number" step="0.0001" className="mt-1.5" value={form.longitude} onChange={num("longitude")} />
+            </div>
+            <div>
+              <Label className="field-label">Monitored since</Label>
+              <Input type="date" className="mt-1.5" value={form.monitored_since} onChange={set("monitored_since")} />
+            </div>
+          </div>
+
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+              {saving ? "Saving…" : community ? "Save changes" : "Add community"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

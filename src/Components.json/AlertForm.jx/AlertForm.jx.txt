@@ -1,0 +1,161 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ALERT_CATEGORIES, NIGERIAN_STATES } from "@/lib/constants";
+import { todayIso } from "@/lib/format";
+
+const EMPTY = {
+  title: "",
+  category: "supply",
+  state: "",
+  lga: "",
+  severity: "moderate",
+  detected_date: todayIso(),
+  summary: "",
+  evidence: "",
+  confidence: "medium",
+  verification_steps: "",
+  source: "Field report",
+  status: "open",
+};
+
+export default function AlertForm({ open, onOpenChange, alert, onSaved }) {
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(alert ? { ...EMPTY, ...alert } : EMPTY);
+    setError("");
+  }, [open, alert]);
+
+  const set = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const payload = { ...form };
+      delete payload.id;
+      delete payload.created_date;
+      delete payload.updated_date;
+      delete payload.created_by_id;
+      if (alert) await base44.entities.RiskAlert.update(alert.id, payload);
+      else await base44.entities.RiskAlert.create({ ...payload, demo_record: false });
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      setError("The alert could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-forest-dark">
+            {alert ? "Update risk alert" : "Record risk alert"}
+          </DialogTitle>
+          <DialogDescription className="text-[12px]">
+            Every alert must carry its evidence and the steps required to verify it before action is taken.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="mt-4 space-y-3.5">
+          <div>
+            <Label className="field-label">Title</Label>
+            <Input required className="mt-1.5" value={form.title} onChange={set("title")} />
+          </div>
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div>
+              <Label className="field-label">Category</Label>
+              <select value={form.category} onChange={set("category")} className="select-input mt-1.5">
+                {ALERT_CATEGORIES.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Severity</Label>
+              <select value={form.severity} onChange={set("severity")} className="select-input mt-1.5">
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">State</Label>
+              <select value={form.state} onChange={set("state")} className="select-input mt-1.5">
+                <option value="">Select state</option>
+                {NIGERIAN_STATES.map((state) => (
+                  <option key={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">LGA</Label>
+              <Input className="mt-1.5" value={form.lga} onChange={set("lga")} />
+            </div>
+            <div>
+              <Label className="field-label">Detected date</Label>
+              <Input type="date" className="mt-1.5" value={form.detected_date} onChange={set("detected_date")} />
+            </div>
+            <div>
+              <Label className="field-label">Confidence</Label>
+              <select value={form.confidence} onChange={set("confidence")} className="select-input mt-1.5">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Status</Label>
+              <select value={form.status} onChange={set("status")} className="select-input mt-1.5">
+                <option value="open">Open</option>
+                <option value="monitoring">Monitoring</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Source</Label>
+              <Input className="mt-1.5" value={form.source} onChange={set("source")} />
+            </div>
+          </div>
+
+          <div>
+            <Label className="field-label">Summary</Label>
+            <Textarea rows={2} className="mt-1.5 resize-none" value={form.summary} onChange={set("summary")} />
+          </div>
+          <div>
+            <Label className="field-label">Evidence</Label>
+            <Textarea rows={2} className="mt-1.5 resize-none" value={form.evidence} onChange={set("evidence")} placeholder="Records, reports or observations supporting this signal" />
+          </div>
+          <div>
+            <Label className="field-label">Recommended verification steps</Label>
+            <Textarea rows={2} className="mt-1.5 resize-none" value={form.verification_steps} onChange={set("verification_steps")} />
+          </div>
+
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+              {saving ? "Saving…" : alert ? "Save alert" : "Record alert"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

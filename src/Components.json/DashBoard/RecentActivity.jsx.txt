@@ -1,0 +1,68 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import ChartCard from "@/components/dashboard/ChartCard";
+import { fetchAll } from "@/lib/analytics";
+import { fmtDate, prettyLabel } from "@/lib/format";
+
+const DOT = {
+  registered: "bg-forest",
+  aggregated: "bg-moss",
+  stored: "bg-gold",
+  sampled: "bg-[#7A8F84]",
+  processed: "bg-[#4B6E7F]",
+  distributed: "bg-gold-dark",
+  verified: "bg-forest-light",
+};
+
+export default function RecentActivity() {
+  const [events, setEvents] = useState(null);
+
+  useEffect(() => {
+    fetchAll("TraceEvent", {}, 40).then((records) => {
+      const sorted = [...records].sort(
+        (a, b) => new Date(b.event_date || b.created_date) - new Date(a.event_date || a.created_date)
+      );
+      setEvents(sorted.slice(0, 6));
+    });
+  }, []);
+
+  return (
+    <ChartCard
+      title="Recent field activities"
+      subtitle="Latest traceability events recorded"
+      className="lg:col-span-2"
+      action={
+        <Link to="/batches" className="text-[11px] font-semibold text-forest underline-offset-4 hover:underline">
+          Traceability
+        </Link>
+      }
+    >
+      {!events ? (
+        <div className="h-[200px] animate-pulse rounded-lg bg-muted/60" />
+      ) : events.length === 0 ? (
+        <div className="flex h-[160px] items-center justify-center text-[12.5px] text-muted-foreground">
+          No field activity recorded yet.
+        </div>
+      ) : (
+        <ul className="divide-y divide-border/70">
+          {events.map((event) => (
+            <li key={event.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+              <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${DOT[event.event_type] || "bg-muted-foreground"}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[12.5px] leading-snug text-foreground/90">
+                  <span className="font-semibold text-forest-dark">{prettyLabel(event.event_type)}</span>
+                  <span className="text-muted-foreground"> · batch </span>
+                  <span className="font-mono text-[11.5px] text-forest">{event.batch_code}</span>
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                  {[event.location, event.actor].filter(Boolean).join(" · ") || "No location recorded"}
+                </p>
+              </div>
+              <span className="shrink-0 text-[10.5px] text-muted-foreground">{fmtDate(event.event_date)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </ChartCard>
+  );
+}

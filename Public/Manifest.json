@@ -1,0 +1,17 @@
+{
+  "name": "NouriTrack — Agricultural Intelligence",
+  "short_name": "NouriTrack",
+  "description": "Agricultural intelligence, food security and community nutrition platform by SciAg Agroscientific Limited.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF8F2",
+  "theme_color": "#14503C",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

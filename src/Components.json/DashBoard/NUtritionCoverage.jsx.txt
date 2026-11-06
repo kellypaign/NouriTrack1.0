@@ -1,0 +1,91 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import ChartCard from "@/components/dashboard/ChartCard";
+import { fetchAll, sumOf } from "@/lib/analytics";
+import { fmtNum } from "@/lib/format";
+
+export default function NutritionCoverage() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetchAll("NutritionRecord", {}, 120).then((records) => {
+      const latestByCommunity = new Map();
+      records.forEach((record) => {
+        const key = record.community || "Unspecified";
+        const existing = latestByCommunity.get(key);
+        const recordDate = new Date(record.report_date || record.created_date).getTime();
+        if (!existing || recordDate > existing.time) {
+          latestByCommunity.set(key, { record, time: recordDate });
+        }
+      });
+      setData({
+        households: sumOf(records, "households_reached"),
+        under5: sumOf(records, "under5_reached"),
+        schoolAge: sumOf(records, "school_age_reached"),
+        communities: records.filter((r) => r.community).map((r) => r.community),
+        diversity: [...latestByCommunity.entries()].slice(0, 4).map(([name, entry]) => ({
+          name,
+          score: Number(entry.record.dietary_diversity_score) || 0,
+        })),
+      });
+    });
+  }, []);
+
+  return (
+    <ChartCard
+      title="Community nutrition coverage"
+      subtitle="Households and children reached through recorded interventions"
+      action={
+        <Link to="/nutrition" className="text-[11px] font-semibold text-forest underline-offset-4 hover:underline">
+          Open module
+        </Link>
+      }
+    >
+      {!data ? (
+        <div className="h-[196px] animate-pulse rounded-lg bg-muted/60" />
+      ) : (
+        <div className="space-y-5">
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Households", value: data.households },
+              { label: "Children <5", value: data.under5 },
+              { label: "School age", value: data.schoolAge },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-border/70 bg-sand-light px-2.5 py-3">
+                <p className="tabular text-[17px] font-semibold leading-none text-forest-dark">
+                  {fmtNum(item.value)}
+                </p>
+                <p className="mt-1.5 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  {item.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <p className="label-caps mb-2.5">Dietary diversity · latest community record</p>
+            <div className="space-y-2.5">
+              {data.diversity.length === 0 && (
+                <p className="text-[12px] text-muted-foreground">No community records yet.</p>
+              )}
+              {data.diversity.map((item) => (
+                <div key={item.name} className="flex items-center gap-3">
+                  <span className="w-28 shrink-0 truncate text-[11.5px] text-foreground/75">{item.name}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-moss"
+                      style={{ width: `${Math.min(100, (item.score / 12) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="tabular w-8 text-right text-[11px] font-semibold text-forest">
+                    {item.score}/12
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </ChartCard>
+  );
+}

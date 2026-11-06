@@ -1,0 +1,44 @@
+import React from "react";
+
+const STEPS = [
+  { title: "Farmer produces", detail: "Registration, farm profile and harvest recorded." },
+  { title: "Batch registered", detail: "Unique code, quantity, storage and custody events." },
+  { title: "Quality tested", detail: "Sample reference, laboratory result and verification." },
+  { title: "Food reaches community", detail: "Distribution recorded against a monitored community." },
+  { title: "Nutrition programme", detail: "Households and children reached, follow-up scheduled." },
+  { title: "Dashboard reports", detail: "Indicators, coverage and alerts reconciled institutionally." },
+];
+
+export default function Journey() {
+  return (
+    <section className="border-b border-border/70">
+      <div className="mx-auto w-full max-w-[1240px] px-6 py-16 md:px-10 md:py-20">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <p className="label-caps mb-3">End-to-end demonstration</p>
+            <h2 className="font-display text-[32px] leading-tight tracking-tight text-forest-dark md:text-[40px]">
+              From a single maize harvest to an institutional report.
+            </h2>
+            <p className="mt-4 max-w-md text-[14.5px] leading-relaxed text-foreground/70">
+              Every stage is a recorded event with an owner, a location and a date. Nothing in the chain is
+              assumed — if a step has not been recorded, the platform shows it as outstanding rather than
+              complete.
+            </p>
+          </div>
+
+          <ol className="relative border-l border-dashed border-forest/25 pl-7">
+            {STEPS.map((step, index) => (
+              <li key={step.title} className="relative pb-7 last:pb-0">
+                <span className="absolute -left-[35px] flex h-5 w-5 items-center justify-center rounded-full border border-forest/30 bg-white text-[9px] font-bold text-forest">
+                  {index + 1}
+                </span>
+                <p className="text-[13.5px] font-semibold text-forest-dark">{step.title}</p>
+                <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{step.detail}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
+}

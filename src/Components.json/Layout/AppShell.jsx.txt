@@ -1,0 +1,43 @@
+import React, { useState } from "react";
+import { Outlet } from "react-router-dom";
+import Sidebar from "@/components/layout/Sidebar";
+import Topbar from "@/components/layout/Topbar";
+import { PortalProvider } from "@/components/layout/PortalContext";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import BottomNav from "@/components/layout/BottomNav";
+
+export default function AppShell() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <PortalProvider>
+      <div className="min-h-screen bg-background">
+        <div className="flex">
+          <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 border-r border-border/70 lg:block">
+            <Sidebar />
+          </aside>
+
+          <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+            <Topbar onOpenMenu={() => setMenuOpen(true)} />
+            <main className="flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 lg:pb-8 lg:pt-8">
+              <div className="mx-auto w-full max-w-[1400px] animate-fade-up">
+                <Outlet />
+              </div>
+            </main>
+            <footer className="border-t border-border/70 px-4 py-4 text-[11px] text-muted-foreground md:px-8">
+              NouriTrack · SciAg Agroscientific Limited, Nigeria · Demonstration environment
+            </footer>
+          </div>
+        </div>
+
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetContent side="left" className="w-[280px] p-0">
+            <Sidebar onNavigate={() => setMenuOpen(false)} />
+          </SheetContent>
+        </Sheet>
+
+        <BottomNav />
+      </div>
+    </PortalProvider>
+  );
+}

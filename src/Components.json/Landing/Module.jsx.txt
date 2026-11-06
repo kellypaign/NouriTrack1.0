@@ -1,0 +1,98 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import {
+  Users,
+  Network,
+  Package,
+  FlaskConical,
+  HeartPulse,
+  Map,
+  BellRing,
+  LineChart,
+  ArrowUpRight,
+} from "lucide-react";
+
+const MODULES = [
+  {
+    title: "Farmer & cooperative registry",
+    body: "Enrol smallholders and cooperatives with farm size, tenure, crops, seasons and verification status.",
+    path: "/farmers",
+    icon: Users,
+  },
+  {
+    title: "Cooperative & cluster mapping",
+    body: "Aggregate members into production clusters and monitor group-level capacity and output.",
+    path: "/cooperatives",
+    icon: Network,
+  },
+  {
+    title: "Commodity traceability",
+    body: "Register every batch with a unique code, then follow it from aggregation to destination.",
+    path: "/batches",
+    icon: Package,
+  },
+  {
+    title: "Food quality & safety",
+    body: "Moisture, aflatoxin and fumonisin results with laboratory references and verification status.",
+    path: "/quality",
+    icon: FlaskConical,
+  },
+  {
+    title: "Community nutrition",
+    body: "Dietary diversity, food access and affordability indicators recorded at community level.",
+    path: "/nutrition",
+    icon: HeartPulse,
+  },
+  {
+    title: "Geographic intelligence",
+    body: "See farmers, clusters, aggregation points and risk areas across states and LGAs.",
+    path: "/map",
+    icon: Map,
+  },
+  {
+    title: "Risk intelligence",
+    body: "Early-warning signals on supply, price, climate and quality, each with its evidence trail.",
+    path: "/alerts",
+    icon: BellRing,
+  },
+  {
+    title: "Impact reporting",
+    body: "Baseline, target and actual achievement by indicator, reporting period and organisation.",
+    path: "/impact",
+    icon: LineChart,
+  },
+];
+
+export default function Modules() {
+  return (
+    <section className="border-b border-border/70 bg-white/50">
+      <div className="mx-auto w-full max-w-[1240px] px-6 py-16 md:px-10 md:py-20">
+        <div className="mb-10 max-w-2xl">
+          <p className="label-caps mb-3">Platform modules</p>
+          <h2 className="font-display text-[32px] leading-tight tracking-tight text-forest-dark md:text-[40px]">
+            One evidence system, eight connected modules.
+          </h2>
+          <p className="mt-4 text-[14.5px] leading-relaxed text-foreground/70">
+            Each module writes to the same record set, so a laboratory result, a batch and a community
+            distribution all reconcile in the institutional dashboard.
+          </p>
+        </div>
+
+        <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+          {MODULES.map((module) => (
+            <Link
+              key={module.title}
+              to={module.path}
+              className="group relative bg-white p-6 transition-colors duration-300 hover:bg-sand-light"
+            >
+              <module.icon className="h-5 w-5 text-forest" strokeWidth={1.6} />
+              <p className="mt-5 text-[13.5px] font-semibold leading-snug text-forest-dark">{module.title}</p>
+              <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">{module.body}</p>
+              <ArrowUpRight className="absolute right-5 top-5 h-4 w-4 text-gold opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

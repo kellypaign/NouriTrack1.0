@@ -1,0 +1,248 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { COMMODITIES, NIGERIAN_STATES, TENURE } from "@/lib/constants";
+
+const EMPTY = {
+  full_name: "",
+  phone: "",
+  state: "",
+  lga: "",
+  community: "",
+  farm_size_ha: "",
+  tenure_status: "owned",
+  crops: [],
+  primary_season: "2026 wet season",
+  estimated_yield_kg: "",
+  actual_yield_kg: "",
+  practices: "",
+  cooperative_name: "",
+  verification_status: "pending",
+  gps_consent: false,
+  latitude: "",
+  longitude: "",
+  registered_by: "",
+  notes: "",
+};
+
+export default function FarmerForm({ open, onOpenChange, farmer, onSaved }) {
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(farmer ? { ...EMPTY, ...farmer } : { ...EMPTY, crops: [] });
+    setError("");
+  }, [open, farmer]);
+
+  const set = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const numeric = (field) => (event) =>
+    setForm({ ...form, [field]: event.target.value === "" ? "" : Number(event.target.value) });
+
+  const toggleCrop = (crop) =>
+    setForm({
+      ...form,
+      crops: form.crops?.includes(crop) ? form.crops.filter((c) => c !== crop) : [...(form.crops || []), crop],
+    });
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const payload = {
+        ...form,
+        farm_size_ha: form.farm_size_ha === "" ? null : Number(form.farm_size_ha),
+        estimated_yield_kg: form.estimated_yield_kg === "" ? null : Number(form.estimated_yield_kg),
+        actual_yield_kg: form.actual_yield_kg === "" ? null : Number(form.actual_yield_kg),
+        latitude: form.latitude === "" ? null : Number(form.latitude),
+        longitude: form.longitude === "" ? null : Number(form.longitude),
+        demo_record: farmer ? farmer.demo_record : false,
+      };
+      delete payload.id;
+      delete payload.created_date;
+      delete payload.updated_date;
+      delete payload.created_by_id;
+
+      if (farmer) {
+        await base44.entities.Farmer.update(farmer.id, payload);
+      } else {
+        const total = await base44.entities.Farmer.count();
+        payload.farmer_code = `NT-FR-${String(total + 1).padStart(4, "0")}`;
+        await base44.entities.Farmer.create(payload);
+      }
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      setError("The farmer record could not be saved. Please check the required fields.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    setSaving(true);
+    await base44.entities.Farmer.delete(farmer.id);
+    setSaving(false);
+    onSaved();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-forest-dark">
+            {farmer ? "Update farmer record" : "Register a farmer"}
+          </DialogTitle>
+          <DialogDescription className="text-[12px]">
+            GPS coordinates are recorded only where the farmer has given consent.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="mt-4 space-y-4">
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <Field label="Full name">
+              <Input required value={form.full_name} onChange={set("full_name")} />
+            </Field>
+            <Field label="Phone number">
+              <Input value={form.phone} onChange={set("phone")} />
+            </Field>
+            <Field label="State">
+              <select required value={form.state} onChange={set("state")} className="select-input">
+                <option value="">Select state</option>
+                {NIGERIAN_STATES.map((state) => (
+                  <option key={state}>{state}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="LGA">
+              <Input value={form.lga} onChange={set("lga")} />
+            </Field>
+            <Field label="Community">
+              <Input value={form.community} onChange={set("community")} />
+            </Field>
+            <Field label="Cooperative (optional)">
+              <Input value={form.cooperative_name} onChange={set("cooperative_name")} />
+            </Field>
+            <Field label="Farm size (hectares)">
+              <Input type="number" step="0.1" value={form.farm_size_ha} onChange={numeric("farm_size_ha")} />
+            </Field>
+            <Field label="Tenure status">
+              <select value={form.tenure_status} onChange={set("tenure_status")} className="select-input">
+                {TENURE.map((tenure) => (
+                  <option key={tenure} value={tenure}>
+                    {tenure}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Production season">
+              <Input value={form.primary_season} onChange={set("primary_season")} />
+            </Field>
+            <Field label="Verification status">
+              <select value={form.verification_status} onChange={set("verification_status")} className="select-input">
+                <option value="pending">Pending</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </Field>
+            <Field label="Estimated yield (kg)">
+              <Input type="number" value={form.estimated_yield_kg} onChange={numeric("estimated_yield_kg")} />
+            </Field>
+            <Field label="Actual yield (kg)">
+              <Input type="number" value={form.actual_yield_kg} onChange={numeric("actual_yield_kg")} />
+            </Field>
+            <Field label="Latitude">
+              <Input type="number" step="0.0001" value={form.latitude} onChange={numeric("latitude")} />
+            </Field>
+            <Field label="Longitude">
+              <Input type="number" step="0.0001" value={form.longitude} onChange={numeric("longitude")} />
+            </Field>
+            <Field label="Registered by">
+              <Input value={form.registered_by} onChange={set("registered_by")} placeholder="Field officer name" />
+            </Field>
+          </div>
+
+          <div>
+            <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Crops cultivated
+            </Label>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {COMMODITIES.map((crop) => {
+                const active = form.crops?.includes(crop);
+                return (
+                  <button
+                    key={crop}
+                    type="button"
+                    onClick={() => toggleCrop(crop)}
+                    className={`rounded-full border px-3 py-1 text-[11.5px] transition-colors ${
+                      active
+                        ? "border-forest bg-forest text-primary-foreground"
+                        : "border-border bg-white text-foreground/70 hover:border-forest/40"
+                    }`}
+                  >
+                    {crop}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <Field label="Agricultural practices">
+              <Textarea rows={2} className="resize-none" value={form.practices} onChange={set("practices")} />
+            </Field>
+            <Field label="Notes">
+              <Textarea rows={2} className="resize-none" value={form.notes} onChange={set("notes")} />
+            </Field>
+          </div>
+
+          <label className="flex items-start gap-2.5 rounded-lg border border-border bg-sand-light p-3 text-[12px] leading-relaxed">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-[#14503C]"
+              checked={!!form.gps_consent}
+              onChange={(event) => setForm({ ...form, gps_consent: event.target.checked })}
+            />
+            The farmer has given consent for GPS farm coordinates to be recorded and used for mapping.
+          </label>
+
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+          <div className="flex items-center justify-between gap-2 pt-1">
+            {farmer ? (
+              <Button type="button" variant="ghost" className="text-destructive" onClick={remove} disabled={saving}>
+                Delete record
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+                {saving ? "Saving…" : farmer ? "Save changes" : "Register farmer"}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <Label className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{label}</Label>
+      <div className="mt-1.5">{children}</div>
+    </div>
+  );
+}

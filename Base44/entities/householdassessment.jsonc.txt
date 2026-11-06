@@ -1,0 +1,85 @@
+{
+  "name": "HouseholdAssessment",
+  "type": "object",
+  "properties": {
+    "household_code": {
+      "type": "string"
+    },
+    "assessment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "foods_consumed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dietary_diversity_score": {
+      "type": "number"
+    },
+    "child_feeding_assessed": {
+      "type": "boolean",
+      "default": false
+    },
+    "child_feeding_notes": {
+      "type": "string"
+    },
+    "maternal_assessed": {
+      "type": "boolean",
+      "default": false
+    },
+    "maternal_notes": {
+      "type": "string"
+    },
+    "food_insecurity_level": {
+      "type": "string",
+      "enum": [
+        "food_secure",
+        "mildly_food_insecure",
+        "moderately_food_insecure",
+        "severely_food_insecure"
+      ],
+      "default": "food_secure"
+    },
+    "food_shortage_reported": {
+      "type": "boolean",
+      "default": false
+    },
+    "shortage_details": {
+      "type": "string"
+    },
+    "difficulty_accessing_food": {
+      "type": "boolean",
+      "default": false
+    },
+    "assessed_by": {
+      "type": "string",
+      "enum": [
+        "self",
+        "field_officer"
+      ],
+      "default": "self"
+    },
+    "assessor_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "household_code",
+    "assessment_date"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

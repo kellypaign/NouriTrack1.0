@@ -1,0 +1,185 @@
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { INTERVENTIONS } from "@/lib/constants";
+import { todayIso } from "@/lib/format";
+
+const EMPTY = {
+  community: "",
+  state: "",
+  report_date: todayIso(),
+  dietary_diversity_score: "",
+  food_availability: "moderate",
+  food_affordability: "moderate",
+  insecurity_flag: false,
+  households_reached: "",
+  under5_reached: "",
+  school_age_reached: "",
+  intervention_type: INTERVENTIONS[0],
+  programme: "",
+  recorded_by: "",
+  notes: "",
+};
+
+export default function NutritionForm({ open, onOpenChange, onSaved }) {
+  const [form, setForm] = useState(EMPTY);
+  const [communities, setCommunities] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(EMPTY);
+    setError("");
+    base44.entities.Community.filter({}, { limit: 100 }).then((page) => setCommunities(page?.items || []));
+  }, [open]);
+
+  const set = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const num = (field) => (event) =>
+    setForm({ ...form, [field]: event.target.value === "" ? "" : Number(event.target.value) });
+
+  const chooseCommunity = (name) => {
+    const match = communities.find((community) => community.name === name);
+    setForm({
+      ...form,
+      community: name,
+      state: match?.state || form.state,
+      programme: form.programme || match?.programme || "",
+    });
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await base44.entities.NutritionRecord.create({
+        ...form,
+        dietary_diversity_score:
+          form.dietary_diversity_score === "" ? null : Number(form.dietary_diversity_score),
+        households_reached: form.households_reached === "" ? null : Number(form.households_reached),
+        under5_reached: form.under5_reached === "" ? null : Number(form.under5_reached),
+        school_age_reached: form.school_age_reached === "" ? null : Number(form.school_age_reached),
+        demo_record: false,
+      });
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      setError("The nutrition record could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-forest-dark">Record nutrition indicator</DialogTitle>
+          <DialogDescription className="text-[12px]">
+            Community-level indicators recorded by an authorised nutrition officer. The platform does not
+            diagnose or treat malnutrition.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="mt-4 space-y-4">
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div>
+              <Label className="field-label">Community</Label>
+              <select required value={form.community} onChange={(e) => chooseCommunity(e.target.value)} className="select-input mt-1.5">
+                <option value="">Select community</option>
+                {communities.map((community) => (
+                  <option key={community.id} value={community.name}>
+                    {community.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Reporting date</Label>
+              <Input type="date" className="mt-1.5" value={form.report_date} onChange={set("report_date")} />
+            </div>
+            <div>
+              <Label className="field-label">Dietary diversity score (0–12)</Label>
+              <Input type="number" className="mt-1.5" value={form.dietary_diversity_score} onChange={num("dietary_diversity_score")} />
+            </div>
+            <div>
+              <Label className="field-label">Intervention type</Label>
+              <select value={form.intervention_type} onChange={set("intervention_type")} className="select-input mt-1.5">
+                {INTERVENTIONS.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Food availability</Label>
+              <select value={form.food_availability} onChange={set("food_availability")} className="select-input mt-1.5">
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Food affordability</Label>
+              <select value={form.food_affordability} onChange={set("food_affordability")} className="select-input mt-1.5">
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div>
+              <Label className="field-label">Households reached</Label>
+              <Input type="number" className="mt-1.5" value={form.households_reached} onChange={num("households_reached")} />
+            </div>
+            <div>
+              <Label className="field-label">Children under 5 reached</Label>
+              <Input type="number" className="mt-1.5" value={form.under5_reached} onChange={num("under5_reached")} />
+            </div>
+            <div>
+              <Label className="field-label">School-age children reached</Label>
+              <Input type="number" className="mt-1.5" value={form.school_age_reached} onChange={num("school_age_reached")} />
+            </div>
+            <div>
+              <Label className="field-label">Programme</Label>
+              <Input className="mt-1.5" value={form.programme} onChange={set("programme")} />
+            </div>
+            <div>
+              <Label className="field-label">Recorded by</Label>
+              <Input className="mt-1.5" value={form.recorded_by} onChange={set("recorded_by")} />
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2.5 rounded-lg border border-border bg-sand-light p-3 text-[12px] leading-relaxed">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-[#14503C]"
+              checked={!!form.insecurity_flag}
+              onChange={(e) => setForm({ ...form, insecurity_flag: e.target.checked })}
+            />
+            Household food insecurity indicators were observed during this reporting period.
+          </label>
+
+          <div>
+            <Label className="field-label">Notes</Label>
+            <Textarea rows={2} className="mt-1.5 resize-none" value={form.notes} onChange={set("notes")} />
+          </div>
+
+          {error && <p className="text-[12px] text-destructive">{error}</p>}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="bg-forest hover:bg-forest-dark">
+              {saving ? "Saving…" : "Record indicator"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

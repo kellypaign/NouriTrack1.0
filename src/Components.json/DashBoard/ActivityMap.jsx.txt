@@ -1,0 +1,52 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
+import ChartCard from "@/components/dashboard/ChartCard";
+import NigeriaMap from "@/components/map/NigeriaMap";
+
+const hasCoords = (record) => Number.isFinite(Number(record.latitude)) && Number.isFinite(Number(record.longitude));
+
+export default function ActivityMap() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const [farmerPage, coopPage, communityPage] = await Promise.all([
+        base44.entities.Farmer.filter({ gps_consent: true }, { limit: 300 }),
+        base44.entities.Cooperative.filter({}, { limit: 200 }),
+        base44.entities.Community.filter({}, { limit: 200 }),
+      ]);
+      setData({
+        farmers: (farmerPage?.items || []).filter(hasCoords),
+        cooperatives: (coopPage?.items || []).filter(hasCoords),
+        communities: (communityPage?.items || []).filter(hasCoords),
+      });
+    };
+    load();
+  }, []);
+
+  return (
+    <ChartCard
+      title="Geographic activity"
+      subtitle="Registered farmers, groups and monitored communities"
+      className="lg:col-span-2"
+      action={
+        <Link to="/map" className="text-[11px] font-semibold text-forest underline-offset-4 hover:underline">
+          National overview
+        </Link>
+      }
+    >
+      {!data ? (
+        <div className="h-[300px] animate-pulse rounded-xl bg-muted/60" />
+      ) : (
+        <NigeriaMap
+          farmers={data.farmers}
+          cooperatives={data.cooperatives}
+          communities={data.communities}
+          layers={{ farmers: true, cooperatives: true, communities: true }}
+          heightClass="h-[300px]"
+        />
+      )}
+    </ChartCard>
+  );
+}

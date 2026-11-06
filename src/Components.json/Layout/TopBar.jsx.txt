@@ -1,0 +1,90 @@
+import React, { useEffect, useState } from "react";
+import { useLocation, Link } from "react-router-dom";
+import { Menu, BellRing, ChevronDown, LifeBuoy } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { PORTALS, pathTitle } from "@/lib/portals";
+import { usePortal } from "@/components/layout/PortalContext";
+import { Button } from "@/components/ui/button";
+import SettingsDialog from "@/components/layout/SettingsDialog";
+
+export default function Topbar({ onOpenMenu }) {
+  const { portalId, setPortalId, portal } = usePortal();
+  const { pathname } = useLocation();
+  const [openAlerts, setOpenAlerts] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    base44.entities.RiskAlert.count({ status: "open" }).then(setOpenAlerts);
+  }, []);
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+      <div className="flex h-16 items-center gap-3 px-4 md:px-8">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={onOpenMenu}
+          aria-label="Open navigation"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        <div className="min-w-0 flex-1">
+          <p className="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:block">
+            NouriTrack Intelligence
+          </p>
+          <p className="truncate text-sm font-medium text-forest-dark">{pathTitle(pathname)}</p>
+        </div>
+
+        <Link
+          to="/alerts"
+          className="relative hidden h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-forest transition-colors hover:border-forest/30 sm:flex"
+          aria-label="Open risk alerts"
+        >
+          <BellRing className="h-4 w-4" strokeWidth={1.8} />
+          {openAlerts > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] font-bold text-forest-dark">
+              {openAlerts}
+            </span>
+          )}
+        </Link>
+
+        <div className="relative hidden md:block">
+          <select
+            value={portalId}
+            onChange={(event) => setPortalId(event.target.value)}
+            className="h-9 max-w-[240px] appearance-none rounded-lg border border-border bg-white pl-3 pr-8 text-[12.5px] font-medium text-forest-dark outline-none transition-colors hover:border-forest/30 focus:border-forest/50"
+            aria-label="Select stakeholder portal"
+          >
+            {PORTALS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        </div>
+
+        <Link
+          to="/"
+          className="hidden items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:text-forest lg:flex"
+        >
+          <LifeBuoy className="h-3.5 w-3.5" />
+          Public site
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 bg-gold-light text-[11px] font-bold text-gold-dark transition-colors hover:border-gold/70"
+          aria-label="Account settings"
+        >
+          {portal.short.slice(0, 2).toUpperCase()}
+        </button>
+      </div>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </header>
+  );
+}

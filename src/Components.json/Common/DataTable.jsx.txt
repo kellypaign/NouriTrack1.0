@@ -1,0 +1,61 @@
+import React from "react";
+import { cn } from "@/lib/utils";
+
+export default function DataTable({ columns, rows, loading, emptyMessage = "No records yet.", onRowClick }) {
+  return (
+    <div className="surface overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
+          <thead>
+            <tr className="border-b border-border bg-sand-light">
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={cn("label-caps whitespace-nowrap px-5 py-3 text-left", column.headerClassName)}
+                >
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={columns.length} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  Loading records…
+                </td>
+              </tr>
+            )}
+            {!loading && rows.length === 0 && (
+              <tr>
+                <td colSpan={columns.length} className="px-5 py-14 text-center text-sm text-muted-foreground">
+                  {emptyMessage}
+                </td>
+              </tr>
+            )}
+            {!loading &&
+              rows.map((row, index) => (
+                <tr
+                  key={row.id || index}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={cn(
+                    "border-b border-border/60 transition-colors last:border-0",
+                    onRowClick && "cursor-pointer hover:bg-sand-light/80"
+                  )}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={cn("px-5 py-3.5 align-middle text-foreground/90", column.cellClassName)}
+                    >
+                      {column.render ? column.render(row) : row[column.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

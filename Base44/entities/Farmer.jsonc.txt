@@ -1,0 +1,97 @@
+{
+  "name": "Farmer",
+  "type": "object",
+  "properties": {
+    "farmer_code": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "lga": {
+      "type": "string"
+    },
+    "community": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "gps_consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "farm_size_ha": {
+      "type": "number"
+    },
+    "tenure_status": {
+      "type": "string",
+      "enum": [
+        "owned",
+        "leased",
+        "family",
+        "communal",
+        "other"
+      ]
+    },
+    "crops": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "primary_season": {
+      "type": "string"
+    },
+    "estimated_yield_kg": {
+      "type": "number"
+    },
+    "actual_yield_kg": {
+      "type": "number"
+    },
+    "practices": {
+      "type": "string"
+    },
+    "cooperative_name": {
+      "type": "string"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "registered_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "demo_record": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "full_name",
+    "state"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

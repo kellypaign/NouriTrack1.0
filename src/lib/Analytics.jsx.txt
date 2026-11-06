@@ -1,0 +1,59 @@
+import { base44 } from "@/api/base44Client";
+
+export const fetchAll = async (entity, query = {}, limit = 200) => {
+  const page = await base44.entities[entity].filter(query, { sort: "-created_date", limit });
+  return page?.items || [];
+};
+
+export const monthKeyOf = (dateString) => {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return null;
+  return {
+    key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+    label: date.toLocaleDateString("en-GB", { month: "short", year: "2-digit" }),
+  };
+};
+
+export const monthlyVolumeSeries = (batches) => {
+  const map = new Map();
+  batches.forEach((batch) => {
+    if (!batch.harvest_date) return;
+    const month = monthKeyOf(batch.harvest_date);
+    if (!month) return;
+    const entry = map.get(month.key) || { key: month.key, label: month.label, volume: 0, batches: 0 };
+    entry.volume += Number(batch.quantity) || 0;
+    entry.batches += 1;
+    map.set(month.key, entry);
+  });
+  return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
+};
+
+export const commodityVolumeSeries = (batches, limit = 6) => {
+  const map = new Map();
+  batches.forEach((batch) => {
+    const name = batch.commodity || "Unspecified";
+    const entry = map.get(name) || { name, volume: 0, batches: 0 };
+    entry.volume += Number(batch.quantity) || 0;
+    entry.batches += 1;
+    map.set(name, entry);
+  });
+  return [...map.values()].sort((a, b) => b.volume - a.volume).slice(0, limit);
+};
+
+export const qualityBreakdown = (assessments) => {
+  const counts = { compliant: 0, flagged: 0, non_compliant: 0, pending: 0 };
+  assessments.forEach((record) => {
+    const key = record.classification || "pending";
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+};
+
+export const sumOf = (records, field) =>
+  records.reduce((total, record) => total + (Number(record[field]) || 0), 0);
+
+export const averageOf = (records, field) => {
+  const values = records.map((record) => Number(record[field])).filter((value) => !Number.isNaN(value));
+  if (!values.length) return 0;
+  return values.reduce((total, value) => total + value, 0) / values.length;
+};

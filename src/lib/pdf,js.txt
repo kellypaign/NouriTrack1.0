@@ -1,0 +1,95 @@
+import { jsPDF } from "jspdf";
+
+export const exportImpactPdf = ({ indicators, outputs, period }) => {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 48;
+  let y = 64;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(20, 80, 60);
+  doc.text("NouriTrack — Impact Monitoring Report", margin, y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(110, 120, 115);
+  y += 18;
+  doc.text(`SciAg Agroscientific Limited, Nigeria · Reporting period: ${period}`, margin, y);
+  y += 12;
+  doc.text(`Generated ${new Date().toLocaleString("en-GB")} · Demonstration data`, margin, y);
+
+  y += 28;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(20, 80, 60);
+  doc.text("Programme outputs (calculated from platform records)", margin, y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(40, 50, 45);
+  outputs.forEach((output) => {
+    y += 15;
+    doc.text(`${output.label}: ${output.value}`, margin + 6, y);
+  });
+
+  y += 30;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(20, 80, 60);
+  doc.text("Indicators", margin, y);
+  y += 18;
+
+  const headers = ["Indicator", "Category", "Baseline", "Target", "Actual", "Verified"];
+  const widths = [200, 70, 60, 55, 55, 60];
+  doc.setFontSize(8);
+  doc.setTextColor(90, 100, 95);
+  let x = margin;
+  headers.forEach((header, index) => {
+    doc.text(header, x, y);
+    x += widths[index];
+  });
+
+  y += 6;
+  doc.setDrawColor(220, 214, 200);
+  doc.line(margin, y, 547, y);
+  y += 14;
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40, 50, 45);
+  indicators.forEach((indicator) => {
+    if (y > 780) {
+      doc.addPage();
+      y = 60;
+    }
+    const cells = [
+      String(indicator.name || "").slice(0, 46),
+      indicator.category || "",
+      String(indicator.baseline ?? "—"),
+      String(indicator.target ?? "—"),
+      String(indicator.actual ?? "—"),
+      indicator.verified ? "Verified" : "Not verified",
+    ];
+    x = margin;
+    cells.forEach((cell, index) => {
+      doc.text(cell, x, y);
+      x += widths[index];
+    });
+    y += 15;
+  });
+
+  y += 12;
+  doc.setFontSize(7.5);
+  doc.setTextColor(120, 128, 124);
+  doc.text(
+    "Outputs describe activity delivered. Outcomes describe change in food security or nutrition status and",
+    margin,
+    y
+  );
+  doc.text(
+    "are only reported as verified where an authorised officer has verified the underlying evidence.",
+    margin,
+    y + 10
+  );
+
+  doc.save("nouritrack-impact-report.pdf");
+};

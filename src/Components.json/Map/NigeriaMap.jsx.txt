@@ -1,0 +1,113 @@
+import React from "react";
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import { fmtNum, prettyLabel } from "@/lib/format";
+
+const RISK_COLOR = {
+  low: "#4B8B5A",
+  moderate: "#C79B4B",
+  high: "#B4553A",
+  critical: "#8C3B24",
+};
+
+export default function NigeriaMap({ farmers, cooperatives, communities, layers, heightClass = "h-[520px]" }) {
+  return (
+    <div className={`${heightClass} w-full overflow-hidden rounded-xl border border-border`}>
+      <MapContainer
+        center={[9.082, 8.6753]}
+        zoom={6}
+        scrollWheelZoom={false}
+        style={{ height: "100%", width: "100%" }}
+        className="z-0"
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+
+        {layers.farmers &&
+          farmers.map((farmer) => (
+            <CircleMarker
+              key={farmer.id}
+              center={[Number(farmer.latitude), Number(farmer.longitude)]}
+              radius={4.5}
+              pathOptions={{ color: "#1F6B51", fillColor: "#4B8B5A", fillOpacity: 0.7, weight: 1 }}
+            >
+              <Tooltip direction="top" offset={[0, -6]}>
+                <span className="text-[11px]">
+                  {farmer.full_name} · {farmer.community || farmer.state}
+                </span>
+              </Tooltip>
+              <Popup>
+                <div className="text-[11.5px] leading-relaxed">
+                  <strong>{farmer.full_name}</strong>
+                  <br />
+                  {farmer.farmer_code}
+                  <br />
+                  Farm {(farmer.crops || []).join(", ") || "not recorded"}
+                  <br />
+                  {farmSummary(farmer)}
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
+
+        {layers.cooperatives &&
+          cooperatives.map((group) => (
+            <CircleMarker
+              key={group.id}
+              center={[Number(group.latitude), Number(group.longitude)]}
+              radius={7}
+              pathOptions={{ color: "#0C3527", fillColor: "#14503C", fillOpacity: 0.55, weight: 1.5 }}
+            >
+              <Tooltip direction="top" offset={[0, -8]}>
+                <span className="text-[11px]">{group.name}</span>
+              </Tooltip>
+              <Popup>
+                <div className="text-[11.5px] leading-relaxed">
+                  <strong>{group.name}</strong>
+                  <br />
+                  {prettyLabel(group.record_type)} · {fmtNum(group.member_count)} members
+                  <br />
+                  {[group.lga, group.state].filter(Boolean).join(", ")}
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
+
+        {layers.communities &&
+          communities.map((community) => (
+            <CircleMarker
+              key={community.id}
+              center={[Number(community.latitude), Number(community.longitude)]}
+              radius={8}
+              pathOptions={{
+                color: RISK_COLOR[community.risk_level] || "#C79B4B",
+                fillColor: RISK_COLOR[community.risk_level] || "#C79B4B",
+                fillOpacity: 0.5,
+                weight: 1.5,
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -8]}>
+                <span className="text-[11px]">{community.name}</span>
+              </Tooltip>
+              <Popup>
+                <div className="text-[11.5px] leading-relaxed">
+                  <strong>{community.name}</strong>
+                  <br />
+                  {fmtNum(community.households)} households · {fmtNum(community.children_under5)} under 5
+                  <br />
+                  Food access {community.food_access_index ?? "—"} · Risk {community.risk_level}
+                </div>
+              </Popup>
+            </CircleMarker>
+          ))}
+      </MapContainer>
+    </div>
+  );
+}
+
+function farmSummary(farmer) {
+  if (!farmer.farm_size_ha) return "Farm size not recorded";
+  return `${farmer.farm_size_ha} ha · ${farmer.verification_status}`;
+}
