@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 42 38% 97%;
+    --foreground: 160 22% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 160 22% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 22% 12%;
+    --primary: 158 48% 17%;
+    --primary-foreground: 42 40% 96%;
+    --secondary: 150 22% 93%;
+    --secondary-foreground: 158 40% 18%;
+    --muted: 42 22% 94%;
+    --muted-foreground: 160 8% 42%;
+    --accent: 40 52% 52%;
+    --accent-foreground: 158 45% 14%;
+    --destructive: 6 62% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 16% 88%;
+    --input: 40 16% 85%;
+    --ring: 158 40% 32%;
+    --radius: 0.75rem;
+    --chart-1: 158 48% 22%;
+    --chart-2: 145 38% 42%;
+    --chart-3: 40 55% 55%;
+    --chart-4: 175 25% 45%;
+    --chart-5: 25 45% 55%;
+    --font-heading: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Newsreader', Georgia, serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 160 18% 24%;
+    --sidebar-primary: 158 48% 17%;
+    --sidebar-primary-foreground: 42 40% 96%;
+    --sidebar-accent: 145 22% 94%;
+    --sidebar-accent-foreground: 158 45% 16%;
+    --sidebar-border: 40 18% 90%;
+    --sidebar-ring: 158 40% 32%;
+  }
+
+  .dark {
+    --background: 160 22% 8%;
+    --foreground: 42 34% 93%;
+    --card: 160 20% 11%;
+    --card-foreground: 42 34% 93%;
+    --popover: 160 20% 12%;
+    --popover-foreground: 42 34% 93%;
+    --primary: 150 42% 48%;
+    --primary-foreground: 160 30% 8%;
+    --secondary: 158 18% 17%;
+    --secondary-foreground: 150 18% 90%;
+    --muted: 158 16% 16%;
+    --muted-foreground: 145 12% 68%;
+    --accent: 42 58% 60%;
+    --accent-foreground: 40 30% 12%;
+    --destructive: 6 56% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 158 14% 22%;
+    --input: 158 14% 20%;
+    --ring: 150 38% 52%;
+    --chart-1: 150 45% 55%;
+    --chart-2: 145 38% 60%;
+    --chart-3: 40 60% 62%;
+    --chart-4: 175 28% 58%;
+    --chart-5: 25 48% 62%;
+    --sidebar-background: 160 22% 9%;
+    --sidebar-foreground: 145 12% 72%;
+    --sidebar-primary: 150 42% 48%;
+    --sidebar-primary-foreground: 160 30% 8%;
+    --sidebar-accent: 158 16% 16%;
+    --sidebar-accent-foreground: 150 18% 90%;
+    --sidebar-border: 158 14% 20%;
+    --sidebar-ring: 150 38% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "cv05", "ss01";
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-heading;
+  }
+
+  ::selection {
+    background: #dfeedf;
+    color: #0c3527;
+  }
+}
+
+@layer components {
+  .field-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground;
+  }
+  .select-input {
+    @apply h-9 w-full rounded-md border border-input bg-white px-3 text-sm text-foreground outline-none transition-colors focus:border-forest/50 focus:ring-1 focus:ring-ring/40;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .label-caps {
+    @apply text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+  }
+  .surface {
+    @apply rounded-xl border border-border/80 bg-card;
+  }
+}
+
+.leaflet-container {
+  font-family: var(--font-body);
+  background: #eef1ea;
+}
+
+/* Dark-mode overrides for custom utility colors so text/surfaces stay readable. */
+.dark .text-forest-dark { color: hsl(150 42% 62%); }
+.dark .text-forest { color: hsl(150 48% 70%); }
+.dark .text-gold-dark { color: hsl(42 60% 72%); }
+.dark .bg-white { background-color: hsl(160 20% 13%); }
+.dark .bg-sand-light { background-color: hsl(158 18% 15%); }
+.dark .bg-sand-light\/50 { background-color: hsl(158 18% 15% / 0.5); }
+.dark .bg-sand-light\/60 { background-color: hsl(158 18% 15% / 0.6); }
+.dark .bg-gold-light { background-color: hsl(40 34% 20%); }
+.dark .bg-gold-light\/70 { background-color: hsl(40 34% 20% / 0.7); }
+.dark .bg-forest-tint { background-color: hsl(150 30% 18%); }
+.dark .bg-moss-light { background-color: hsl(150 25% 20%); }
+
+/* Reduce accidental text selection on interactive UI (buttons, cards, nav, icons). */
+button, a, nav, .surface, img, svg {
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
