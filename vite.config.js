@@ -15,6 +15,7 @@ export default defineConfig({
       visualEditAgent: true
     }),
     react(),
+    
   ],
   base: '/NouriTrack1.0/',
 });
